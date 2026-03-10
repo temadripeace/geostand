@@ -1,0 +1,10 @@
+io
+re
+zipfile
+chardet
+unicodedata
+pandas
+geopandas
+streamlit
+shapely
+xml.etree.ElementTree
