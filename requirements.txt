@@ -8,4 +8,3 @@ shapely
 streamlit
 geopandas
 openpyxl==3.1.2
-xml.etree.ElementTree
