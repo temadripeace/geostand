@@ -7,7 +7,6 @@ pandas
 shapely
 streamlit
 geopandas
-openpyxl
+openpyxl==3.1.2
 unicodedata
 xml.etree.ElementTree
-
