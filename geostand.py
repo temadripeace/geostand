@@ -1,6 +1,8 @@
 import io
+import os
 import re
 import json
+import tempfile
 import zipfile
 import chardet
 import unicodedata
@@ -25,7 +27,7 @@ st.set_page_config(
 st.sidebar.markdown(
     """
     <div style="
-        font-size:18px;
+        font-size:15px;
         font-family:'Poppins', sans-serif;
         font-weight:500;
         line-height:1.6;
@@ -47,7 +49,7 @@ st.sidebar.markdown(
     <li>Removes Z-values to keep geometries in 2D.</li>
     <li>Formats coordinates to six decimal places.</li>
     <li>Cleans small spikes and self-intersections.</li>
-    <li>Maps data fields to Sucafina's Standardised Geodata Schema.</li>
+    <li>Maps data fields to Sucafina's standardised Geodata Schema.</li>
     <li>Exports standardised data to CSV, Excel, KML, or GeoJSON formats.</li>
     </ul>
 
@@ -157,6 +159,7 @@ with Col1:
 #======================================================================================================================================
     
     def clean_geometry(value):
+
         if pd.isna(value) or not isinstance(value, str):
             return value
 
@@ -452,14 +455,17 @@ with Col1:
         return final_data
 
 #======================================================================================================================================
-# LOADING FILES
+# LOADING DATA
 #======================================================================================================================================
     def load_file(file_bytes, ext):
+
+        ext = ext.lower()
+        final_data = None
+
         if ext == "csv":
             raw_data = file_bytes.read()
             file_bytes.seek(0)
-            detected = chardet.detect(raw_data)
-            encoding = detected['encoding'] or 'utf-8'
+            encoding = chardet.detect(raw_data)["encoding"] or "utf-8"
             final_data = pd.read_csv(file_bytes, encoding=encoding)
 
         elif ext in ["xls", "xlsx"]:
@@ -472,19 +478,13 @@ with Col1:
             final_data = pd.read_excel(file_bytes, header=header_row - 1)
 
         elif ext in ["geojson", "json"]:
-            final_data = gpd.read_file(file_bytes)
+            gdf = gpd.read_file(file_bytes)
+            final_data = pd.DataFrame(gdf)
 
-
-        elif ext in ["kml", "kmz"]:
+        elif ext == "kml":
 
             uploaded_file.seek(0)
-
-            if ext == "kmz":
-                with zipfile.ZipFile(uploaded_file) as z:
-                    kml_name = [f for f in z.namelist() if f.endswith(".kml")][0]
-                    kml_bytes = z.read(kml_name)
-            else:
-                kml_bytes = uploaded_file.read()
+            kml_bytes = uploaded_file.read()
 
             gdf = gpd.read_file(io.BytesIO(kml_bytes), driver="KML")
             gdf["geometry"] = gdf.geometry.apply(lambda g: g.wkt if g else "")
@@ -501,15 +501,54 @@ with Col1:
                 attrs_list.append(attrs)
 
             attr_df = pd.DataFrame(attrs_list)
+
             final_data = pd.concat(
                 [attr_df.reset_index(drop=True), gdf.reset_index(drop=True)],
                 axis=1
             )
 
+        elif ext == "zip":
+            with tempfile.TemporaryDirectory() as tmpdir:
 
+                file_bytes.seek(0)
+                with zipfile.ZipFile(file_bytes) as z:
+                    z.extractall(tmpdir)
+
+                shp_files = []
+                other_dfs = []
+
+                for root, dirs, files in os.walk(tmpdir):
+                    for f in files:
+                        path = os.path.join(root, f)
+                        e = f.split(".")[-1].lower()
+
+                        if e == "shp":
+                            shp_files.append(path)
+
+                        elif e in ["csv", "xls", "xlsx", "geojson", "json", "kml"]:
+                            with open(path, "rb") as fb:
+                                df = load_file(io.BytesIO(fb.read()), e)
+                                if df is not None:
+                                    other_dfs.append(df)
+
+                if shp_files:
+                    gdf = gpd.read_file(shp_files[0])
+                    other_dfs.append(pd.DataFrame(gdf))
+
+                if other_dfs:
+                    final_data = pd.concat(other_dfs, ignore_index=True)
+
+        if final_data is None:
+            return None
 
         final_data = normalize_text(final_data)
         return convert_to_geodf(final_data)
+
+
+#======================================================================================================================================
+# UPLOADING DATA
+#======================================================================================================================================
+
 
 
     uploaded_file = st.file_uploader(
