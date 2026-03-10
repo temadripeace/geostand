@@ -1,6 +1,6 @@
 xlrd
 rtree
-fiona
+fiona==1.9.6
 pyproj
 chardet
 pandas
