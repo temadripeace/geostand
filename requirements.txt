@@ -2,7 +2,6 @@ streamlit
 pandas
 geopandas
 shapely
-fiona
 pyproj
 rtree
 openpyxl
