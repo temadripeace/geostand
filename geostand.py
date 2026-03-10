@@ -351,7 +351,8 @@ with Col1:
     def normalize_text(Data):
         for col in Data.select_dtypes(include=["object"]).columns:
             Data[col] = Data[col].apply(
-                lambda x: unicodedata.normalize("NFKD", str(x)).encode("ASCII", "ignore").decode("ASCII") if pd.notna(x) else x
+                lambda x: unicodedata.normalize("NFKD", x).encode("ASCII", "ignore").decode("ASCII")
+                if isinstance(x, str) else x
             )
         return Data
 
