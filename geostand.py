@@ -34,21 +34,21 @@ st.sidebar.markdown(
     ">
     <b>About the Tool:</b><br>
 
-    This tool performs geospatial data cleaning and standardization, enabling seamless integration with Meridia and other geospatial platforms. It supports multiple file formats, including CSV, GeoJSON, KML, Excel, and ZIP archives, as well as various character encodings such as UTF-8, Latin1, and Windows-1252, ensuring special characters are handled correctly during data processing.
+    This tool performs geospatial data cleaning and standardisation, enabling seamless integration with Meridia and other geospatial platforms. It supports multiple file formats, including CSV, GeoJSON, KML, Excel, and ZIP archives, as well as various character encodings such as UTF-8, Latin1, and Windows-1252, ensuring special characters are handled correctly during data processing.
     
     
     <b> Key Features:</b><br>
 
     <ul>
-    <li>Cleans speacial characters and prevents encoding issues.</li>
+    <li>Cleans special characters and prevents encoding issues.</li>
     <li>Converts geometry columns into valid WKT format.</li>
     <li>Closes POLYGON and MULTIPOLYGON rings.</li>
     <li>Arranges coordinates in Longitude/Latitude format.</li>
     <li>Removes Z-values to keep geometries in 2D.</li>
     <li>Formats coordinates to six decimal places.</li>
     <li>Cleans small spikes and self-intersections.</li>
-    <li>Maps data fields to Sucafina's Standardized Geodata Schema.</li>
-    <li>Exports standardized data to CSV, Excel, KML, or GeoJSON formats.</li>
+    <li>Maps data fields to Sucafina's Standardised Geodata Schema.</li>
+    <li>Exports standardised data to CSV, Excel, KML, or GeoJSON formats.</li>
     </ul>
 
     
