@@ -1,10 +1,8 @@
-xlrd
-rtree
-fiona==1.9.6
-pyproj
-chardet
-pandas
-shapely
 streamlit
+pandas
 geopandas
-openpyxl==3.1.2
+shapely
+pyproj
+rtree
+xlrd
+chardet
