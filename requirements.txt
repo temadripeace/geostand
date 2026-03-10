@@ -7,5 +7,5 @@ rtree
 openpyxl
 xlrd
 chardet
-GDAL
+GDAL==3.7.2
 fiona
