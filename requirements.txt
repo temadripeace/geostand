@@ -2,7 +2,6 @@ xlrd
 rtree
 fiona
 pyproj
-zipfile
 chardet
 pandas
 shapely
