@@ -30,7 +30,7 @@ st.sidebar.markdown(
         font-size:15px;
         font-family:'Poppins', sans-serif;
         font-weight:500;
-        line-height:1.6;
+        line-height:2;
         color:#15767f;
         text-align:justify;
     ">
@@ -74,70 +74,119 @@ st.markdown("""
 .fixed-header {
     position: fixed;
     top: 3rem;
-    left: 0rem;
+    left: 0rem;       
     width: 100%;
     background: white;
     z-index: 9999;
     text-align: center;
-    padding: 5px 0 10px 0;
+    padding: 2px 2px 2px 2px;
     border-bottom: 2px solid #15767f;
 }
 
 .fixed-header img {
     display: block;
     margin: 0 auto;
-    width: 250px;  
+    width: 200px;  
     height: auto;
 }
 
 .fixed-header h1 {
     font-family: 'Poppins', sans-serif;
     color: #15767f;
-    font-size: 24px;
-    margin: 5px 0 0 0;
+    font-size: 26px;
+    margin: 0 0 0 0;
 }
 
 .content {
-    margin-top: 300px;
+    margin-top: 270px;
 }
+            
+.content-headings {
+    font-family: 'Poppins', sans-serif;
+    color: #15767f;
+    font-size: 24px;
+    font-weight: bold;
+}
+            
+@media (max-width: 1200px) {
+    .fixed-header {
+        top: 3rem;
+        padding: 2px 2px 2px 2px;
+        border-bottom-width: 2px;
+    }
+
+    .fixed-header img {
+        width: 200px;
+    }
+
+    .fixed-header h1 {
+        font-size: 26px;
+        margin: 0 0 0 0;
+    }
+
+    .content {
+        margin-top: 270px;
+    }
+            
+    .content-headings {
+        font-family: 'Poppins', sans-serif;
+        color: #15767f;
+        font-size: 24px;
+        font-weight: bold;
+    }
+}
+
             
 @media (max-width: 900px) {
     .fixed-header {
-        top: 2rem;
-        padding: 4px 0 6px 0;
+        top: 3.2rem;
+        padding: 2px 2px 2px 2px;
         border-bottom-width: 1px;
     }
 
     .fixed-header img {
-        width: 180px;
+        width: 150px;
     }
 
     .fixed-header h1 {
         font-size: 18px;
-        margin: 4px 0 0 0;
+        margin: 1px 0 0 0;
     }
 
     .content {
-        margin-top: 220px;
+        margin-top: 225px;
     }
-}
+            
+    .content-headings {
+        font-family: 'Poppins', sans-serif;
+        color: #15767f;
+        font-size: 15px;
+    }
+}            
 
-@media (max-width: 500px) {
+
+@media (max-width: 600px) {
     .fixed-header {
-        top: 2rem;
-        padding: 3px 0 4px 0;
+        top: 3.5rem;
+        padding: 0px 0px 0px 0px;
     }
 
     .fixed-header img {
-        width: 140px;
+        width: 100px;
     }
 
     .fixed-header h1 {
-        font-size: 16px;
+        font-size: 14px;
     }
 
     .content {
-        margin-top: 200px;
+        margin-top: 185px;
+    }
+            
+    .content-headings {
+        font-family: 'Poppins', sans-serif;
+        color: #15767f;
+        font-size: 13px;
     }
 }
 </style>
@@ -158,7 +207,9 @@ Col1, Col2 = st.columns([1, 1])
 
 with Col1:
     st.markdown(
-        """<h1 style="font-family:'Poppins', sans-serif; color:#15767f; font-size:25px;">Upload Geospatial Data</h1>""",
+        """
+            <div class="content-headings">Upload Geospatial Data</div>
+        """,
         unsafe_allow_html=True
     )
 
@@ -596,7 +647,7 @@ with Col1:
             final_data.columns = final_data.columns.str.strip()
             final_data.columns = final_data.columns.str.replace('\u200b','')
             final_data.columns = final_data.columns.str.lower()
-            
+
         elif ext in ["xls", "xlsx"]:
             header_row = st.number_input(
                 "Enter the row number containing column headers",
@@ -697,9 +748,9 @@ with Col2:
     
     st.markdown(
         """
-        <h1 style="font-family:'Poppins', sans-serif; color:#15767f; font-size:25px;">
+        <div class="content-headings">
         Standardized Geodata Schema
-        </h1>
+        </div>
         """,
         unsafe_allow_html=True
     )
