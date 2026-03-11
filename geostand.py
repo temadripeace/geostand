@@ -72,9 +72,9 @@ st.markdown("""
 }
 
 .fixed-header {
-    position: fixed;
+    position: absolute;
     top: 3rem;
-    left: 0rem;       
+    left: 0;       
     width: 100%;
     background: white;
     z-index: 9999;
