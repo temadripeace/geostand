@@ -65,6 +65,20 @@ st.sidebar.markdown(
 #======================================================================================================================================
 st.markdown("""
 <style>
+:root {
+    --brand-color: #15767f;
+    --brand-hover: #246b45;
+    --brand-dark: #218838;
+}
+
+@media (prefers-color-scheme: dark) {
+    :root {
+        --brand-color: #4dd0e1;
+        --brand-hover: #26c6da;
+        --brand-dark: #1ba9b8;
+    }
+}
+
 .block-container {
     padding-top: 0rem;
     padding-bottom: 0rem;
@@ -79,7 +93,7 @@ st.markdown("""
     z-index: 9999;
     text-align: center;
     padding: 2px 2px 2px 2px;
-    border-bottom: 2px solid #15767f;
+    border-bottom: 2px solid var(--brand-color);
 }
 
 .fixed-header img {
@@ -91,7 +105,7 @@ st.markdown("""
 
 .fixed-header h1 {
     font-family: 'Poppins', sans-serif;
-    color: #15767f;
+    color: var(--brand-color);
     font-size: 26px;
     margin: 0 0 0 0;
 }
@@ -102,7 +116,7 @@ st.markdown("""
             
 .content-headings {
     font-family: 'Poppins', sans-serif;
-    color: #15767f;
+    color: var(--brand-color);
     font-size: 24px;
     font-weight: bold;
 }
@@ -129,7 +143,7 @@ st.markdown("""
             
     .content-headings {
         font-family: 'Poppins', sans-serif;
-        color: #15767f;
+        color: var(--brand-color);
         font-size: 24px;
         font-weight: bold;
     }
@@ -158,7 +172,7 @@ st.markdown("""
             
     .content-headings {
         font-family: 'Poppins', sans-serif;
-        color: #15767f;
+        color: var(--brand-color);
         font-size: 15px;
     }
 }            
