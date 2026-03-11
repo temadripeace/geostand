@@ -100,6 +100,46 @@ st.markdown("""
 .content {
     margin-top: 300px;
 }
+            
+@media (max-width: 900px) {
+    .fixed-header {
+        top: 2rem;
+        padding: 4px 0 6px 0;
+        border-bottom-width: 1px;
+    }
+
+    .fixed-header img {
+        width: 180px;
+    }
+
+    .fixed-header h1 {
+        font-size: 18px;
+        margin: 4px 0 0 0;
+    }
+
+    .content {
+        margin-top: 220px;
+    }
+}
+
+@media (max-width: 500px) {
+    .fixed-header {
+        top: 2rem;
+        padding: 3px 0 4px 0;
+    }
+
+    .fixed-header img {
+        width: 140px;
+    }
+
+    .fixed-header h1 {
+        font-size: 16px;
+    }
+
+    .content {
+        margin-top: 200px;
+    }
+}
 </style>
 
 <div class="fixed-header">
@@ -553,7 +593,10 @@ with Col1:
             file_bytes.seek(0)
             encoding = chardet.detect(raw_data)["encoding"] or "utf-8"
             final_data = pd.read_csv(file_bytes, encoding=encoding)
-
+            final_data.columns = final_data.columns.str.strip()
+            final_data.columns = final_data.columns.str.replace('\u200b','')
+            final_data.columns = final_data.columns.str.lower()
+            
         elif ext in ["xls", "xlsx"]:
             header_row = st.number_input(
                 "Enter the row number containing column headers",
