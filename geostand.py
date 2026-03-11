@@ -76,7 +76,6 @@ st.markdown("""
     top: 3rem;
     left: 0;       
     width: 100%;
-    background: white;
     z-index: 9999;
     text-align: center;
     padding: 2px 2px 2px 2px;
@@ -176,17 +175,17 @@ st.markdown("""
     }
 
     .fixed-header h1 {
-        font-size: 14px;
+        font-size: 13px;
     }
 
     .content {
-        margin-top: 185px;
+        margin-top: 200px;
     }
             
     .content-headings {
         font-family: 'Poppins', sans-serif;
         color: #15767f;
-        font-size: 13px;
+        font-size: 12px;
     }
 }
 </style>
