@@ -63,22 +63,52 @@ st.sidebar.markdown(
 
 # MAIN TOOL PAGE SETTUP FOR THE STREAMLIT APP
 #======================================================================================================================================
-st.markdown(
-    """
-    <div style="text-align:center; margin-bottom:20px;">
-        <img src="https://group.sucafina.com/themes/sucafina/assets/img/base/logo.svg" width="300">
-        <h1 style="font-family:'Poppins', sans-serif; color:#15767f; font-size:25px;">Geospatial Data Cleaning & Standardization Tool</h1>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+st.markdown("""
+<style>
+.block-container {
+    padding-top: 0rem;
+    padding-bottom: 0rem;
+    margin-top: 0rem;
+}
 
-st.markdown(
-    """
-    <hr style="height:2px;border:none;color:#15767f;background-color:#15767f;">
-    """,
-    unsafe_allow_html=True
-)
+.fixed-header {
+    position: fixed;
+    top: 3rem;
+    left: 0rem;
+    width: 100%;
+    background: white;
+    z-index: 9999;
+    text-align: center;
+    padding: 5px 0 10px 0;
+    border-bottom: 2px solid #15767f;
+}
+
+.fixed-header img {
+    display: block;
+    margin: 0 auto;
+    width: 250px;  
+    height: auto;
+}
+
+.fixed-header h1 {
+    font-family: 'Poppins', sans-serif;
+    color: #15767f;
+    font-size: 24px;
+    margin: 5px 0 0 0;
+}
+
+.content {
+    margin-top: 300px;
+}
+</style>
+
+<div class="fixed-header">
+    <img src="https://group.sucafina.com/themes/sucafina/assets/img/base/logo.svg">
+    <h1>Geospatial Data Cleaning & Standardization Tool</h1>
+</div>
+
+<div class="content"></div>
+""", unsafe_allow_html=True)
 #======================================================================================================================================
 # DATA LOADING AND PROCESSING COLUMN 
 #======================================================================================================================================
@@ -374,6 +404,7 @@ with Col1:
         point_cols   = [c for c in existing_columns if "point" in c.lower()]
         generic_cols = [c for c in existing_columns if c.lower() in ["geometry", "wkt"]]
 
+
 #======================================================================================================================================
 # CHOSING GEOMETRY (WKT) COLUMN BASED ON PRIORITY AND CREATING FINAL WKT COLUMN
 #======================================================================================================================================
@@ -455,6 +486,61 @@ with Col1:
         return final_data
 
 #======================================================================================================================================
+# KML LODING FUNCTION
+#======================================================================================================================================
+
+    def load_kml(uploaded_file, ext):
+        uploaded_file.seek(0)
+        if ext == "kmz":
+            with zipfile.ZipFile(uploaded_file) as z:
+                kml_name = [f for f in z.namelist() if f.lower().endswith(".kml")][0]
+                kml_bytes = z.read(kml_name)
+        else:
+            kml_bytes = uploaded_file.read()
+
+        root = ET.fromstring(kml_bytes)
+        ns = {"kml": "http://www.opengis.net/kml/2.2"}
+
+        rows = []
+        for placemark in root.findall(".//kml:Placemark", ns):
+            geom = placemark.find(".//kml:Polygon", ns)
+            if geom is None:
+                geom = placemark.find(".//kml:Point", ns)
+            if geom is None:
+                geom = placemark.find(".//kml:LineString", ns)
+
+            geom_wkt = ""
+            if geom is not None:
+                coordinates = geom.find(".//kml:coordinates", ns)
+                if coordinates is not None and coordinates.text:
+                    coords_text = coordinates.text.strip()
+                    try:
+                        geom_wkt = wkt.dumps(shape(coords_text))
+                    except:
+                        geom_wkt = coords_text
+
+            row = {"plot_gps_polygon": geom_wkt if "Polygon" in geom.tag else "",
+                "plot_gps_point": geom_wkt if "Point" in geom.tag else "",
+                "plot_wkt": geom_wkt}
+
+            for sd in placemark.findall(".//kml:SimpleData", ns):
+                row[sd.attrib.get("name")] = sd.text
+            for ed in placemark.findall(".//kml:Data", ns):
+                value = ed.find("kml:value", ns)
+                row[ed.attrib.get("name")] = value.text if value is not None else ""
+
+            name = placemark.find("kml:name", ns)
+            if name is not None and name.text:
+                row["name"] = name.text
+            desc = placemark.find("kml:description", ns)
+            if desc is not None and desc.text:
+                row["description"] = desc.text
+
+            rows.append(row)
+
+        return pd.DataFrame(rows)
+
+#======================================================================================================================================
 # LOADING DATA
 #======================================================================================================================================
     def load_file(file_bytes, ext):
@@ -482,30 +568,7 @@ with Col1:
             final_data = pd.DataFrame(gdf)
 
         elif ext == "kml":
-
-            uploaded_file.seek(0)
-            kml_bytes = uploaded_file.read()
-
-            gdf = gpd.read_file(io.BytesIO(kml_bytes), driver="KML")
-            gdf["geometry"] = gdf.geometry.apply(lambda g: g.wkt if g else "")
-
-            root = ET.fromstring(kml_bytes)
-            ns = {"kml": "http://www.opengis.net/kml/2.2"}
-
-            attrs_list = []
-
-            for placemark in root.findall(".//kml:Placemark", ns):
-                attrs = {}
-                for sd in placemark.findall(".//kml:SimpleData", ns):
-                    attrs[sd.attrib.get("name")] = sd.text
-                attrs_list.append(attrs)
-
-            attr_df = pd.DataFrame(attrs_list)
-
-            final_data = pd.concat(
-                [attr_df.reset_index(drop=True), gdf.reset_index(drop=True)],
-                axis=1
-            )
+            final_data = load_kml(file_bytes, ext)
 
         elif ext == "zip":
             with tempfile.TemporaryDirectory() as tmpdir:
