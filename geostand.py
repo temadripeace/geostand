@@ -31,16 +31,16 @@ st.sidebar.markdown(
         font-family:'Poppins', sans-serif;
         font-weight:500;
         line-height:2;
-        color:#15767f;
+        color: var(--brand-color);
         text-align:justify;
     ">
-    <b>About the Tool:</b><br>
+
+    <b> TOOL OVERVIEW:</b><br>
 
     This tool performs geospatial data cleaning and standardisation, enabling seamless integration with Meridia and other geospatial platforms. It supports multiple file formats, including CSV, GeoJSON, KML, Excel, and ZIP archives, as well as various character encodings such as UTF-8, Latin1, and Windows-1252, ensuring special characters are handled correctly during data processing.
     
     
-    <b> Key Features:</b><br>
-
+    <b> KEY FEATURES:</b><br>
     <ul>
     <li>Cleans special characters and prevents encoding issues.</li>
     <li>Converts geometry columns into valid WKT format.</li>
@@ -53,7 +53,18 @@ st.sidebar.markdown(
     <li>Exports standardised data to CSV, Excel, KML, or GeoJSON formats.</li>
     </ul>
 
+    <b> REQUIRED GEOMETRY COLUMN NAMEs</b><br>
     
+
+    <li><b>Longitude / Latitude (Separate Columns):</b>
+    lon, lat, Lon, Lat, LON, LAT, longitude, latitude, Longitude, Latitude, LONGITUDE, LATITUDE<br></li>
+
+    <li><b>Single Column Points:</b>
+    point, Point, POINT, gps_point, Gps_Point, GPS_POINT, plot_gps_point, Plot_Gps_Point, PLOT_GPS_POINT<br></li>
+
+    <li><b>Polygons/Multipolygons:</b>
+    polygon, Polygon, POLYGON, gps_polygon, Gps_Polygon, GPS_POLYGON, plot_gps_polygon, Plot_Gps_Polygon, PLOT_GPS_POLYGON</li>
+
     </div>
     """,
     unsafe_allow_html=True
@@ -198,7 +209,7 @@ st.markdown("""
             
     .content-headings {
         font-family: 'Poppins', sans-serif;
-        color: #15767f;
+        color: var(--brand-color);
         font-size: 12px;
     }
 }
@@ -776,7 +787,7 @@ with Col2:
         "supplier_code": "Supplier Code*",
         "plot_region": "Region",
         "plot_district": "District",
-        "plot_area_ha": "Area (Ha)*",
+        "plot_area_ha": "Area (Ha)",
         "plot_longitude": "Longitude",
         "plot_latitude": "Latitude",
         "plot_gps_point": "GPS Point",
@@ -840,7 +851,7 @@ with Col2:
     st.markdown("""
     <style>
     div.stButton > button:first-child {
-        background-color: #15767f;
+        background-color: var(--brand-color);
         color: white;
         font-size: 20px;
         font-weight: bold;
@@ -853,7 +864,7 @@ with Col2:
     }
 
     div.stButton > button:first-child:hover {
-        background-color: #246b45;
+        background-color: var(--brand-hover);
         color: white;
     }
     </style>
@@ -910,6 +921,57 @@ with Col2:
                 axis=1
             )
 
+#======================================================================================================================================
+# AREA COMPUTATAION LOGIC
+#======================================================================================================================================
+
+            if "plot_wkt" in standardized_df.columns and "plot_area_ha" in standardized_df.columns:
+
+                def compute_area_ha(wkt_str):
+
+                    if not wkt_str or str(wkt_str).strip() == "":
+                        return None
+
+                    try:
+                        geom = wkt.loads(wkt_str)
+
+                        if isinstance(geom, (Polygon, MultiPolygon)):
+
+                            gdf = gpd.GeoDataFrame(
+                                geometry=[geom],
+                                crs="EPSG:4326"
+                            )
+
+                            projected = gdf.to_crs(epsg=3857)
+
+                            area_m2 = projected.geometry.area.iloc[0]
+
+                            return round(area_m2 / 10000, 3)
+
+                        elif isinstance(geom, Point):
+                            return None
+
+                    except Exception:
+                        return None
+
+                computed_area = standardized_df["plot_wkt"].apply(compute_area_ha)
+
+                standardized_df["plot_area_ha"] = computed_area.fillna(standardized_df["plot_area_ha"])
+
+                point_missing_area = (
+                    standardized_df["plot_wkt"].str.startswith("POINT", na=False) &
+                    standardized_df["plot_area_ha"].astype(str).str.strip().eq("")
+                )
+
+                if point_missing_area.any():
+                    st.error(
+                        "Area (Ha) must be provided when geometry is a POINT."
+                    )
+                    st.stop()
+
+#======================================================================================================================================
+# CERTIFICATION MAPPING LOGIC
+#======================================================================================================================================
             standardized_df["is_geodata_validated"] = is_geodata_validated
 
             for field_key, row in edited_cert.iterrows():
@@ -924,6 +986,23 @@ with Col2:
 
                 else:
                     standardized_df[field_key] = False
+
+            if "plot_farmer_group" in standardized_df.columns and "is_impact_certified" in standardized_df.columns:
+                standardized_df.loc[~standardized_df["is_impact_certified"], "plot_farmer_group"] = ""
+
+            if "is_impact_certified" in standardized_df.columns and "plot_farmer_group" in standardized_df.columns:
+
+                missing_farmer_group = standardized_df[
+                    (standardized_df["is_impact_certified"] == True) &
+                    (standardized_df["plot_farmer_group"].astype(str).str.strip() == "")
+                ]
+
+                if not missing_farmer_group.empty:
+                    st.error(
+                        "IMPACT certification requires 'Name of Farmer Group'. "
+                        "Please ensure all IMPACT certified plots have a farmer group."
+                    )
+                    st.stop()
 
             st.success("Data standardized successfully.")
             st.session_state["standardized_data"] = standardized_df
@@ -966,7 +1045,7 @@ standardized_df = standardized_df.reindex(columns=desired_order)
 
 st.markdown(
     """
-    <hr style="height:2px;border:none;color:#15767f;background-color:#15767f;">
+    <hr style="height:2px;border:none;color:var(--brand-color);background-color:var(--brand-color);">
     """,
     unsafe_allow_html=True
 )
@@ -982,7 +1061,7 @@ with col2:
     button_style = """
         <style>
         div.stDownloadButton > button:first-child {
-            background-color: #15767f;
+            background-color: var(--brand-color);
             color: white;
             font-size: 18px;
             font-weight: bold;
@@ -990,7 +1069,7 @@ with col2:
             border-radius: 8px;
         }
         div.stDownloadButton > button:hover {
-            background-color: #218838;
+            background-color: var(--brand-dark);
             color: white;
         }
         </style>
@@ -1055,7 +1134,7 @@ with col2:
 
 st.markdown(
     """
-    <hr style="height:2px;border:none;color:#15767f;background-color:#15767f;">
+    <hr style="height:2px;border:none;color:var(--brand-color);background-color:var(--brand-color);">
     """,
     unsafe_allow_html=True
 )
