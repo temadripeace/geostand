@@ -598,6 +598,7 @@ with Col1:
         Data = Data.drop(columns=existing_columns, errors="ignore")
         final_data = pd.concat([Data, geom_df], axis=1)
         final_data = final_data.fillna("")
+        final_data.columns = final_data.columns.str.strip()
         return final_data
 
 #======================================================================================================================================
