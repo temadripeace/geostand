@@ -921,6 +921,8 @@ with Col2:
                 axis=1
             )
 
+            standardized_df["is_geodata_validated"] = is_geodata_validated
+
 #======================================================================================================================================
 # AREA COMPUTATAION LOGIC
 #======================================================================================================================================
@@ -972,18 +974,14 @@ with Col2:
 #======================================================================================================================================
 # CERTIFICATION MAPPING LOGIC
 #======================================================================================================================================
-            standardized_df["is_geodata_validated"] = is_geodata_validated
-
             for field_key, row in edited_cert.iterrows():
-                source = row["SELECT SOURCE COLUMN"]
-                fallback = row["TRUE/FALSE"]
+                source = row.get("SELECT SOURCE COLUMN", None)
+                fallback = row.get("TRUE/FALSE", None)
 
-                if source:
+                if source and source in final_data.columns:
                     standardized_df[field_key] = final_data[source]
-
                 elif fallback:
                     standardized_df[field_key] = True
-
                 else:
                     standardized_df[field_key] = False
 
@@ -991,12 +989,10 @@ with Col2:
                 standardized_df.loc[~standardized_df["is_impact_certified"], "plot_farmer_group"] = ""
 
             if "is_impact_certified" in standardized_df.columns and "plot_farmer_group" in standardized_df.columns:
-
                 missing_farmer_group = standardized_df[
                     (standardized_df["is_impact_certified"] == True) &
                     (standardized_df["plot_farmer_group"].astype(str).str.strip() == "")
                 ]
-
                 if not missing_farmer_group.empty:
                     st.error(
                         "IMPACT certification requires 'Name of Farmer Group'. "
@@ -1138,17 +1134,3 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
-
-
-
-
-
-
-
-
-
-
-
-
-
-
