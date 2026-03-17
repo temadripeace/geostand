@@ -36,6 +36,7 @@ st.sidebar.markdown(
     ">
 
     <b> TOOL OVERVIEW:</b>
+    
     This tool performs geospatial data cleaning and standardisation, enabling seamless integration with Meridia and other geospatial platforms. It supports multiple file formats, including CSV, GeoJSON, KML, Excel, and ZIP archives, as well as various character encodings such as UTF-8, Latin1, and Windows-1252, ensuring special characters are handled correctly during data processing.
     
     
