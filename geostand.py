@@ -251,6 +251,7 @@ with Col1:
         "poly", "gps_poly", "gps poly", "plot_poly", "plot poly", "plot_gps_poly", "plot gps poly",
         "Poly", "Gps_Poly", "Gps Poly", "Plot_Poly", "Plot Poly", "Plot_Gps_Poly", "Plot Gps Poly",
         "POLY", "GPS_POLY", "GPS POLY", "PLOT_POLY", "PLOT POLY", "PLOT_GPS_POLY", "PLOT GPS POLY",
+        "polygon_points", "polygon points", "Polygon_Points", "Polygon Points", "POLYGON_POINT", "POLYGON POINT", 
 
         "geom", "point_geom","point geom", "polygon_geom","polygon geom", "plot_geom", "plot geom", 
         "Geom", "Point_Geom","Point Geom", "Polygon_Geom","Polygon geom", "plot_Geom", "plot Geom", 
