@@ -988,8 +988,7 @@ with Col2:
                 ]
                 if not missing_farmer_group.empty:
                     st.error(
-                        "IMPACT certification requires 'Name of Farmer Group'. "
-                        "Please ensure all IMPACT certified plots have a farmer group."
+                        "All IMPACT-Certified plots must have a ‘Farmer Group Name’. Please provide this information before proceeding."
                     )
                     st.stop()
 
