@@ -35,12 +35,12 @@ st.sidebar.markdown(
         text-align:justify;
     ">
 
-    <b> TOOL OVERVIEW:</b><br>
+    <b> TOOL OVERVIEW:</b>
 
     This tool performs geospatial data cleaning and standardisation, enabling seamless integration with Meridia and other geospatial platforms. It supports multiple file formats, including CSV, GeoJSON, KML, Excel, and ZIP archives, as well as various character encodings such as UTF-8, Latin1, and Windows-1252, ensuring special characters are handled correctly during data processing.
     
     
-    <b> KEY FEATURES:</b><br>
+    <b> KEY FEATURES:</b>
     <ul>
     <li>Cleans special characters and prevents encoding issues.</li>
     <li>Converts geometry columns into valid WKT format.</li>
@@ -54,7 +54,7 @@ st.sidebar.markdown(
     <li>Exports standardised data to CSV, Excel, KML, or GeoJSON formats.</li>
     </ul>
 
-    <b> REQUIRED GEOMETRY COLUMN NAMES</b><br>
+    <b> REQUIRED GEOMETRY COLUMN NAMES</b>
     
 
     <li><b>Longitude / Latitude (Separate Columns):</b>
