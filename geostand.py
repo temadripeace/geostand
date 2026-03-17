@@ -27,7 +27,7 @@ st.set_page_config(
 st.sidebar.markdown(
     """
     <div style="
-        font-size:15px;
+        font-size:13px;
         font-family:'Poppins', sans-serif;
         font-weight:500;
         line-height:2;
