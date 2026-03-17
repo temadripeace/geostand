@@ -54,7 +54,7 @@ st.sidebar.markdown(
     <li>Exports standardised data to CSV, Excel, KML, or GeoJSON formats.</li>
     </ul>
 
-    <b> REQUIRED GEOMETRY COLUMN NAMEs</b><br>
+    <b> REQUIRED GEOMETRY COLUMN NAMES</b><br>
     
 
     <li><b>Longitude / Latitude (Separate Columns):</b>
