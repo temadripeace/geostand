@@ -10,6 +10,7 @@ import pandas as pd
 import streamlit as st
 import geopandas as gpd
 from shapely import wkt
+from io import StringIO
 import xml.etree.ElementTree as ET
 from shapely.validation import make_valid
 from shapely.ops import transform
@@ -598,6 +599,9 @@ with Col1:
         final_data = pd.concat([Data, geom_df], axis=1)
         final_data = final_data.fillna("")
         final_data.columns = final_data.columns.str.strip()
+        final_data.columns = final_data.columns.str.replace('\u200b','')
+        final_data.columns = final_data.columns.str.lower()
+
         return final_data
 
 #======================================================================================================================================
@@ -668,9 +672,7 @@ with Col1:
             file_bytes.seek(0)
             encoding = chardet.detect(raw_data)["encoding"] or "utf-8"
             final_data = pd.read_csv(file_bytes, encoding=encoding)
-            final_data.columns = final_data.columns.str.strip()
-            final_data.columns = final_data.columns.str.replace('\u200b','')
-            final_data.columns = final_data.columns.str.lower()
+
 
         elif ext in ["xls", "xlsx"]:
             header_row = st.number_input(
