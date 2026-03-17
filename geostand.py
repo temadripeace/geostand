@@ -10,7 +10,7 @@ import pandas as pd
 import streamlit as st
 import geopandas as gpd
 from shapely import wkt
-from io import StringIO
+from pyproj import Geod
 import xml.etree.ElementTree as ET
 from shapely.validation import make_valid
 from shapely.ops import transform
@@ -929,49 +929,40 @@ with Col2:
 # AREA COMPUTATAION LOGIC
 #======================================================================================================================================
 
-            if "plot_wkt" in standardized_df.columns and "plot_area_ha" in standardized_df.columns:
+            geod = Geod(ellps="WGS84")
 
-                def compute_area_ha(wkt_str):
+            def compute_area_ha(wkt_str):
+                if not wkt_str or str(wkt_str).strip() == "":
+                    return None
 
-                    if not wkt_str or str(wkt_str).strip() == "":
+                try:
+                    geom = wkt.loads(wkt_str)
+
+                    if isinstance(geom, Polygon):
+                        area, _ = geod.geometry_area_perimeter(geom)
+                        return round(abs(area) / 10000, 3)
+
+                    elif isinstance(geom, MultiPolygon):
+                        area = sum(abs(geod.geometry_area_perimeter(poly)[0]) for poly in geom.geoms)
+                        return round(area / 10000, 3)
+
+                    elif isinstance(geom, Point):
                         return None
 
-                    try:
-                        geom = wkt.loads(wkt_str)
+                except Exception:
+                    return None
 
-                        if isinstance(geom, (Polygon, MultiPolygon)):
+            computed_area = standardized_df["plot_wkt"].apply(compute_area_ha)
+            standardized_df["plot_area_ha"] = computed_area.fillna(standardized_df["plot_area_ha"])
 
-                            gdf = gpd.GeoDataFrame(
-                                geometry=[geom],
-                                crs="EPSG:4326"
-                            )
+            point_missing_area = (
+                standardized_df["plot_wkt"].str.startswith("POINT", na=False) &
+                (standardized_df["plot_area_ha"].astype(str).str.strip() == "")
+            )
 
-                            projected = gdf.to_crs(epsg=3857)
-
-                            area_m2 = projected.geometry.area.iloc[0]
-
-                            return round(area_m2 / 10000, 3)
-
-                        elif isinstance(geom, Point):
-                            return None
-
-                    except Exception:
-                        return None
-
-                computed_area = standardized_df["plot_wkt"].apply(compute_area_ha)
-
-                standardized_df["plot_area_ha"] = computed_area.fillna(standardized_df["plot_area_ha"])
-
-                point_missing_area = (
-                    standardized_df["plot_wkt"].str.startswith("POINT", na=False) &
-                    standardized_df["plot_area_ha"].astype(str).str.strip().eq("")
-                )
-
-                if point_missing_area.any():
-                    st.error(
-                        "Area (Ha) must be provided when geometry is a POINT."
-                    )
-                    st.stop()
+            if point_missing_area.any():
+                st.error("Area (Ha) must be provided when geometry is a POINT.")
+                st.stop()
 
 #======================================================================================================================================
 # CERTIFICATION MAPPING LOGIC
