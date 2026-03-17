@@ -1,8 +1,6 @@
 import io
-import os
 import re
 import json
-import tempfile
 import zipfile
 import chardet
 import unicodedata
@@ -658,6 +656,89 @@ with Col1:
             rows.append(row)
 
         return pd.DataFrame(rows)
+    
+#======================================================================================================================================
+# GeoJSON LODING FUNCTION
+#======================================================================================================================================
+
+    def load_geojson(uploaded_file, ext):
+        uploaded_file.seek(0)
+
+        if ext == "zip":
+            with zipfile.ZipFile(uploaded_file) as z:
+                geojson_files = [f for f in z.namelist() if f.lower().endswith((".geojson", ".json"))]
+                if not geojson_files:
+                    return None
+                dfs = []
+                for fname in geojson_files:
+                    file_bytes = z.read(fname)
+                    try:
+                        file_str = file_bytes.decode("utf-8")
+                    except UnicodeDecodeError:
+                        file_str = file_bytes.decode("latin-1")
+                    data = json.loads(file_str)
+                    features = data.get("features", [])
+                    rows = []
+                    for feature in features:
+                        geom = feature.get("geometry")
+                        props = feature.get("properties") or {}
+                        geom_wkt = ""
+                        geom_type = ""
+                        if geom:
+                            try:
+                                shapely_geom = shape(geom)
+                                geom_wkt = wkt.dumps(shapely_geom)
+                                geom_type = shapely_geom.geom_type
+                            except:
+                                geom_wkt = ""
+                        row = {
+                            "plot_gps_polygon": geom_wkt if geom_type in ["Polygon", "MultiPolygon"] else "",
+                            "plot_gps_point": geom_wkt if geom_type == "Point" else "",
+                            "plot_wkt": geom_wkt
+                        }
+                        for k, v in props.items():
+                            row[k] = v
+                        extra_keys = [k for k in feature.keys() if k not in ["type", "geometry", "properties"]]
+                        for key in extra_keys:
+                            row[key] = feature.get(key)
+                        rows.append(row)
+                    dfs.append(pd.DataFrame(rows))
+                if not dfs:
+                    return None
+                return pd.concat(dfs, ignore_index=True, sort=False)
+        else:
+            file_bytes = uploaded_file.read()
+            try:
+                file_str = file_bytes.decode("utf-8")
+            except UnicodeDecodeError:
+                file_str = file_bytes.decode("latin-1")
+            data = json.loads(file_str)
+            features = data.get("features", [])
+            rows = []
+            for feature in features:
+                geom = feature.get("geometry")
+                props = feature.get("properties") or {}
+                geom_wkt = ""
+                geom_type = ""
+                if geom:
+                    try:
+                        shapely_geom = shape(geom)
+                        geom_wkt = wkt.dumps(shapely_geom)
+                        geom_type = shapely_geom.geom_type
+                    except:
+                        geom_wkt = ""
+                row = {
+                    "plot_gps_polygon": geom_wkt if geom_type in ["Polygon", "MultiPolygon"] else "",
+                    "plot_gps_point": geom_wkt if geom_type == "Point" else "",
+                    "plot_wkt": geom_wkt
+                }
+                for k, v in props.items():
+                    row[k] = v
+                extra_keys = [k for k in feature.keys() if k not in ["type", "geometry", "properties"]]
+                for key in extra_keys:
+                    row[key] = feature.get(key)
+                rows.append(row)
+            return pd.DataFrame(rows)
 
 #======================================================================================================================================
 # LOADING DATA
@@ -683,50 +764,18 @@ with Col1:
             )
             final_data = pd.read_excel(file_bytes, header=header_row - 1)
 
-        elif ext in ["geojson", "json"]:
-            gdf = gpd.read_file(file_bytes)
-            final_data = pd.DataFrame(gdf)
-
         elif ext == "kml":
             final_data = load_kml(file_bytes, ext)
 
-        elif ext == "zip":
-            with tempfile.TemporaryDirectory() as tmpdir:
 
-                file_bytes.seek(0)
-                with zipfile.ZipFile(file_bytes) as z:
-                    z.extractall(tmpdir)
-
-                shp_files = []
-                other_dfs = []
-
-                for root, dirs, files in os.walk(tmpdir):
-                    for f in files:
-                        path = os.path.join(root, f)
-                        e = f.split(".")[-1].lower()
-
-                        if e == "shp":
-                            shp_files.append(path)
-
-                        elif e in ["csv", "xls", "xlsx", "geojson", "json", "kml"]:
-                            with open(path, "rb") as fb:
-                                df = load_file(io.BytesIO(fb.read()), e)
-                                if df is not None:
-                                    other_dfs.append(df)
-
-                if shp_files:
-                    gdf = gpd.read_file(shp_files[0])
-                    other_dfs.append(pd.DataFrame(gdf))
-
-                if other_dfs:
-                    final_data = pd.concat(other_dfs, ignore_index=True)
+        elif ext in ["geojson", "json"]:
+            final_data = load_geojson(file_bytes, ext)
 
         if final_data is None:
             return None
 
         final_data = normalize_text(final_data)
         return convert_to_geodf(final_data)
-
 
 #======================================================================================================================================
 # UPLOADING DATA
