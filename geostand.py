@@ -59,10 +59,10 @@ st.sidebar.markdown(
     lon, lat, Lon, Lat, LON, LAT, longitude, latitude, Longitude, Latitude, LONGITUDE, LATITUDE<br></li>
 
     <li><b>Single Column Points:</b>
-    point, Point, POINT, gps_point, Gps_Point, GPS_POINT, plot_gps_point, Plot_Gps_Point, PLOT_GPS_POINT<br></li>
+    point, Point, POINT, gps_point, GPS_POINT, plot_gps_point, PLOT_GPS_POINT, geom, GEOM, geometry, GEOMETRY, wkt, WKT<br></li>
 
     <li><b>Polygons/Multipolygons:</b>
-    polygon, Polygon, POLYGON, gps_polygon, Gps_Polygon, GPS_POLYGON, plot_gps_polygon, Plot_Gps_Polygon, PLOT_GPS_POLYGON</li>
+    polygon, Polygon, POLYGON, gps_polygon, GPS_POLYGON, plot_gps_polygon, PLOT_GPS_POLYGON, geom, GEOM, geometry, GEOMETRY, wkt, WKT</li>
 
     </div>
     """,
