@@ -335,14 +335,17 @@ with Col1:
                     return b, a
                 return a, b
 
-            def fix_polygon(geom):
+            def fix_geometry(geom):
                 if isinstance(geom, Polygon):
                     exterior = [swap_coords_lon_lat(x, y) for x, y in geom.exterior.coords]
                     interiors = [[swap_coords_lon_lat(x, y) for x, y in ring.coords] for ring in geom.interiors]
                     return Polygon(exterior, interiors)
 
                 if isinstance(geom, MultiPolygon):
-                    return MultiPolygon([fix_polygon(p) for p in geom])
+                    return MultiPolygon([fix_geometry(p) for p in geom])
+                
+                if isinstance(geom, Point):
+                    return Point([fix_geometry(p) for p in geom])
 
                 return geom
 
