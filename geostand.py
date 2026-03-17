@@ -844,7 +844,7 @@ with Col2:
         "plot_latitude": "Latitude",
         "plot_gps_point": "GPS Point",
         "plot_gps_polygon": "GPS Polygon",
-        "plot_wkt": "WKT*",
+        "plot_wkt": "Geometry*",
         "plot_supply_chain": "Name of Supply Chain",
         "plot_farmer_group": "Name of Farmer Group"
     }
