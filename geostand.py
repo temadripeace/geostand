@@ -338,10 +338,7 @@ with Col1:
             def fix_polygon(geom):
                 if isinstance(geom, Polygon):
                     exterior = [swap_coords_lon_lat(x, y) for x, y in geom.exterior.coords]
-                    interiors = [
-                        [swap_coords_lon_lat(x, y) for x, y in ring.coords]
-                        for ring in geom.interiors
-                    ]
+                    interiors = [[swap_coords_lon_lat(x, y) for x, y in ring.coords] for ring in geom.interiors]
                     return Polygon(exterior, interiors)
 
                 if isinstance(geom, MultiPolygon):
