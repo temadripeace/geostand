@@ -49,7 +49,7 @@ st.sidebar.markdown(
     <li>Arranges coordinates in Longitude/Latitude format.</li>
     <li>Removes Z-values to keep geometries in 2D.</li>
     <li>Formats coordinates to six decimal places.</li>
-    <li>Computes plot area(ha) for Polygons & Multipolygons.</li>
+    <li>Computes plot area (ha) for Polygons & Multipolygons.</li>
     <li>Cleans small spikes and self-intersections.</li>
     <li>Maps data fields to Sucafina's standardised Geodata Schema.</li>
     <li>Exports standardised data to CSV, Excel, KML, or GeoJSON formats.</li>
