@@ -331,9 +331,23 @@ with Col1:
                 return coords
 
             def swap_coords_lon_lat(a, b):
-                if abs(a) <= 90 and abs(b) <= 180:
+                if abs(a) <= 90 and abs(b) > 90:
                     return b, a
                 return a, b
+
+            def fix_polygon(geom):
+                if isinstance(geom, Polygon):
+                    exterior = [swap_coords_lon_lat(x, y) for x, y in geom.exterior.coords]
+                    interiors = [
+                        [swap_coords_lon_lat(x, y) for x, y in ring.coords]
+                        for ring in geom.interiors
+                    ]
+                    return Polygon(exterior, interiors)
+
+                if isinstance(geom, MultiPolygon):
+                    return MultiPolygon([fix_polygon(p) for p in geom])
+
+                return geom
 
             def extract_xy_from_xyz(text):
 
