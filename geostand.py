@@ -1032,16 +1032,26 @@ with Col2:
 #======================================================================================================================================
 # CERTIFICATION MAPPING LOGIC
 #======================================================================================================================================
+            def to_bool(value):
+                if pd.isna(value):
+                    return False
+                
+                value = str(value).strip().lower()
+                
+                if value in ["true", "yes", "1"]:
+                    return True
+                elif value in ["false", "no", "0"]:
+                    return False
+                else:
+                    return False
             for field_key, row in edited_cert.iterrows():
                 source = row.get("SELECT SOURCE COLUMN", None)
                 fallback = row.get("TRUE/FALSE", None)
 
                 if source and source in final_data.columns:
-                    standardized_df[field_key] = final_data[source]
-                elif fallback:
-                    standardized_df[field_key] = True
+                    standardized_df[field_key] = final_data[source].apply(to_bool)
                 else:
-                    standardized_df[field_key] = False
+                    standardized_df[field_key] = to_bool(fallback)
 
             if "plot_farmer_group" in standardized_df.columns and "is_impact_certified" in standardized_df.columns:
                 standardized_df.loc[~standardized_df["is_impact_certified"], "plot_farmer_group"] = ""
