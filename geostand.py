@@ -797,8 +797,6 @@ with Col1:
 # UPLOADING DATA
 #======================================================================================================================================
 
-
-
     uploaded_file = st.file_uploader(
         "Upload CSV, Excel, GeoJSON, KML, or ZIP",
         type=["csv", "xls", "xlsx", "geojson", "kml", "zip"]
@@ -915,6 +913,10 @@ with Col2:
         index=1
     )
 
+
+#======================================================================================================================================
+# STANDARDIZATION BUTTON AND LOGIC
+#======================================================================================================================================
     st.markdown("""
     <style>
     div.stButton > button:first-child {
@@ -957,6 +959,43 @@ with Col2:
         else:
             standardized_df = pd.DataFrame(index=final_data.index)
 
+
+#======================================================================================================================================
+# RE-ARRANGING COLUMNS
+#======================================================================================================================================
+    
+            desired_order = [
+            "sucafina_plot_id",
+            "supplier_plot_id",
+            "farmer_id",
+            "supplier_code",
+            "plot_region",
+            "plot_district",
+            "plot_area_ha",
+            "plot_longitude",
+            "plot_latitude",
+            "plot_gps_point",
+            "plot_gps_polygon",
+            "plot_wkt",
+            "is_geodata_validated",
+            "is_cafe_practices_certified",
+            "is_rfa_utz_certified",
+            "is_impact_certified",
+            "is_organic_certified",
+            "is_4c_certified",
+            "is_fairtrade_certified",
+            "other_certification_name",
+            "plot_supply_chain",
+            "plot_farmer_group"
+        ]
+
+            standardized_df = standardized_df.reindex(columns=desired_order)
+
+
+#======================================================================================================================================
+# FLAGGING DOUPLICATE PLOT IDs/CREATING SUCAFINA_PLOT_ID IF SUPPLIER PLOT ID ARE VALID AND EXIST IN THE DATASET
+#======================================================================================================================================
+
             for field_key, row in edited_mapping.iterrows():
                 source = row["SELECT SOURCE COLUMN"]
                 manual = str(row["MANUAL VALUE"]).strip()
@@ -972,14 +1011,28 @@ with Col2:
 
             if "supplier_plot_id" in standardized_df.columns:
 
-                duplicate_ids = standardized_df["supplier_plot_id"][
-                    standardized_df["supplier_plot_id"].duplicated()
-                ]
+                duplicate_mask = standardized_df["supplier_plot_id"].duplicated(keep=False)
+                duplicate_rows = standardized_df[duplicate_mask]
 
-                if not duplicate_ids.empty:
-                    st.error("Duplicate (supplier_plot_id) values detected. Each plot ID must be unique. Please correct the duplicates before standardizing the data.")
-                    st.write("Duplicate IDs:", duplicate_ids.unique())
+                if not duplicate_rows.empty:
+                    duplicate_ids = duplicate_rows["supplier_plot_id"].unique()
+
+                    st.error("Duplicate or missing (supplier_plot_id) values detected: Please ensure that each plot ID is unique and not empty")
+                    st.dataframe(duplicate_rows)
                     st.stop()
+
+            if "plot_wkt" in standardized_df.columns:
+
+                duplicate_geom_mask = standardized_df["plot_wkt"].duplicated(keep=False)
+                duplicate_geom_rows = standardized_df[duplicate_geom_mask]
+
+                if not duplicate_geom_rows.empty:
+                    duplicate_geom = duplicate_geom_rows["plot_wkt"].unique()
+
+                    st.error("Duplicate plot GEOMETRY values detected: Please ensure that each plot GEOMETRY value is unique and not empty")
+                    st.dataframe(duplicate_geom_rows)
+                    st.stop()
+
 
             standardized_df["sucafina_plot_id"] = standardized_df.apply(
                 lambda r: f"{r['supplier_code']}_{r['supplier_plot_id']}"
@@ -991,7 +1044,7 @@ with Col2:
             standardized_df["is_geodata_validated"] = is_geodata_validated
 
 #======================================================================================================================================
-# AREA COMPUTATAION LOGIC
+# AREA COMPUTATAION LOGIC FOR PLOYGONS /FLAGS FOR POINTS MISSING AREA OR WITH AREA GREATER THAN 4 HA
 #======================================================================================================================================
 
             geod = Geod(ellps="WGS84")
@@ -1026,7 +1079,18 @@ with Col2:
             )
 
             if point_missing_area.any():
-                st.error("Area (Ha) must be provided when geometry is a POINT.")
+                st.error("Missing Area for Plot(s): Please provide the Reported Area (Ha) for all plots mapped as POINT geometries")
+                st.write(standardized_df[point_missing_area])
+                st.stop()
+
+            point_large_area = (
+                standardized_df["plot_wkt"].str.startswith("POINT", na=False) &
+                (pd.to_numeric(standardized_df["plot_area_ha"], errors="coerce") > 4)
+            )
+
+            if point_large_area.any():
+                st.error("POINT Geometry Plot(s) with an area greater than 4 Ha detected: Please verify the reported area or remap these plots as POLYGON geometries.")
+                st.write(standardized_df[point_large_area])
                 st.stop()
 
 #======================================================================================================================================
@@ -1044,6 +1108,7 @@ with Col2:
                     return False
                 else:
                     return False
+                
             for field_key, row in edited_cert.iterrows():
                 source = row.get("SELECT SOURCE COLUMN", None)
                 fallback = row.get("TRUE/FALSE", None)
@@ -1063,44 +1128,13 @@ with Col2:
                 ]
                 if not missing_farmer_group.empty:
                     st.error(
-                        "All IMPACT-Certified plots must have a ‘Farmer Group Name’. Please provide this information before proceeding."
+                        "All IMPACT-Certified plots must have a ‘Farmer Group Name’: Please provide this information before proceeding."
                     )
                     st.stop()
 
             st.success("Data standardized successfully.")
             st.session_state["standardized_data"] = standardized_df
     
-#======================================================================================================================================
-# RE-ARRANGING COLUMNS
-#======================================================================================================================================
-    
-    desired_order = [
-    "sucafina_plot_id",
-    "supplier_plot_id",
-    "farmer_id",
-    "supplier_code",
-    "plot_region",
-    "plot_district",
-    "plot_area_ha",
-    "plot_longitude",
-    "plot_latitude",
-    "plot_gps_point",
-    "plot_gps_polygon",
-    "plot_wkt",
-    "is_geodata_validated",
-    "is_cafe_practices_certified",
-    "is_rfa_utz_certified",
-    "is_impact_certified",
-    "is_organic_certified",
-    "is_4c_certified",
-    "is_fairtrade_certified",
-    "other_certification_name",
-    "plot_supply_chain",
-    "plot_farmer_group"
-]
-
-standardized_df = standardized_df.reindex(columns=desired_order)
-
 
 #======================================================================================================================================
 # DATA DOWNLOAD OPTIONS
