@@ -226,8 +226,64 @@ st.markdown("""
 
 
 Col1, Col2 = st.columns([1, 1])
-
 with Col1:
+
+    final_data = pd.DataFrame()
+    standardized_df = pd.DataFrame()
+    base_name = pd.DataFrame()
+
+    world = pd.read_csv('country_bounding_boxes.csv')
+
+    st.markdown(
+            """
+                <div class="content-headings">Select Coffee Origin (Country) </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    country_list = sorted(world["country"].dropna().unique())
+    
+    country = st.selectbox(
+        "Please select an Origin Country",
+        country_list,
+        index=None,
+        placeholder="Search a country"
+    )
+
+    if not country:
+        st.stop()
+
+    
+    if country:
+        filtered = world[world["country"] == country]
+
+        if not filtered.empty:
+            selected = filtered.iloc[0]
+
+            minx, miny = selected["min_lon"], selected["min_lat"]
+            maxx, maxy = selected["max_lon"], selected["max_lat"]
+
+            bounding_box = (miny, maxy, minx, maxx)
+        else:
+            bounding_box = None
+    st.markdown(
+            f"""
+            <p>
+            <b>Bounding Box:</b>
+            Min Lon: <span style="color:red;">{minx}</span>, 
+            Min Lat: <span style="color:red;">{miny}</span> | 
+            Max Lon: <span style="color:red;">{maxx}</span>, 
+            Max Lat: <span style="color:red;">{maxy}</span>
+            </p>
+            """,
+            unsafe_allow_html=True
+        )
+          
+#======================================================================================================================================
+# DATA LOADING AND PROCESSING COLUMN 
+#======================================================================================================================================
+
+
     st.markdown(
         """
             <div class="content-headings">Upload Geospatial Data</div>
@@ -235,69 +291,55 @@ with Col1:
         unsafe_allow_html=True
     )
 
-    final_data = pd.DataFrame()
-    standardized_df = pd.DataFrame()
-    base_name = pd.DataFrame()
+    def normalize(col):
+        col = str(col).strip().lower()
+        col = unicodedata.normalize('NFKD', col).encode('ascii', 'ignore').decode('ascii')
+        col = col.replace(" ", "_")
+        return col
 
     GEOMETRY_CANDIDATES = [
-        "gps", "point", "gps_point", "gps point", "plot_gps_point", "plot gps point", 
-        "Gps", "Point", "Gps_Point", "GPS POINT", "Plot_Gps_Point", "Plot Gps Point", 
-        "GPS", "POINT", "GPS_POINT", "Gps Point", "PLOT_GPS_POINT", "PLOT GPS POINT", 
+        "gps", "point",  "punto", "puntos", "gps_point", "plot_gps_point",
 
-        "wkt", "point_wkt","point wkt", "polygon_wkt","polygon wkt", "plot_wkt", "plot wkt", 
-        "Wkt", "Point_Wkt","Point Wkt", "Polygon_Wkt","Polygon Wkt", "Plot_Wkt", "Plot Wkt", 
-        "WKT", "POINT_WKT","POINT WKT", "POLYGON_WKT","POLYGON WKT", "PLOT_WKT", "PLOT WKT", 
+        "wkt", "point_wkt", "polygon_wkt", "plot_wkt",
 
-        "poly", "gps_poly", "gps poly", "plot_poly", "plot poly", "plot_gps_poly", "plot gps poly",
-        "Poly", "Gps_Poly", "Gps Poly", "Plot_Poly", "Plot Poly", "Plot_Gps_Poly", "Plot Gps Poly",
-        "POLY", "GPS_POLY", "GPS POLY", "PLOT_POLY", "PLOT POLY", "PLOT_GPS_POLY", "PLOT GPS POLY",
-        "polygon_points", "polygon points", "Polygon_Points", "Polygon Points", "POLYGON_POINTS", "POLYGON POINTS", 
-        "polygon_point", "polygon point", "Polygon_Point", "Polygon Point", "POLYGON_POINT", "POLYGON POINT", 
-        
-        "geom", "point_geom","point geom", "polygon_geom","polygon geom", "plot_geom", "plot geom", 
-        "Geom", "Point_Geom","Point Geom", "Polygon_Geom","Polygon geom", "plot_Geom", "plot Geom", 
-        "GEOM", "POINT_GEOM","POINT GEOM", "POLYGON_GEOM","POLYGON GEOM", "PLOT_GEOM", "PLOT GEOM", 
+        "poly", "polygon", "poligono", "poligonos"
+        "gps_poly", "plot_poly", "plot_gps_poly",
+        "polygon_points", "polygon_point",
 
-        "shape", "point_shape", "point shape", "polygon_shape", "polygon_shape", "plot_shape", "plot shape", 
-        "Shape", "Point_Shape", "Point Shape", "Polygon_Shape", "Polygon_Shape", "Plot_Shape", "Plot Shape", 
-        "SHAPE", "POINT_SHAPE", "POINT SHAPE", "POLYGON_SHAPE", "POLYGON SHAPE", "PLOT_SHAPE", "PLOT SHAPE", 
+        "geom", "point_geom", "polygon_geom", "plot_geom",
 
-        "coord", "point_coord", "point coord", "polygon_coord", "polygon coord", "plot_coord", "plot coord",
-        "Coord", "Point_Coord", "Point Coord", "Polygon_Coord", "Polygon Coord", "Plot_Coord", "Plot Coord",
-        "COORD", "POINT_COORD", "POINT COORD", "POLYGON_COORD", "POLYGON COORD", "PLOT_COORD", "PLOT COORD",
+        "shape", "point_shape", "polygon_shape", "plot_shape",
 
-        "latlon", "gps_latlon", "gps latlon", "plot_latlon", "plot latlon", "plot_gps_latlon", "plot gps latlon",
-        "LatLon", "Gps_LatLon", "Gps LatLon", "Plot_LatLon", "Plot LatLon", "Plot_Gps_LatLon", "Plot Gps LatLon",
-        "LATLON", "GPS_LATLON", "GPS LATLON", "PLOT_LATLON", "PLOT LATLON", "PLOT_GPS_LATLON", "PLOT GPS LATLON",
+        "coord", "point_coord", "polygon_coord", "plot_coord",
 
-        "x", "y",  "lon", "lat", "longitude", "latitude", "plot_lon", "plot_lat", "plot_longitude", "plot_latitude"
-        "X", "Y",  "Lon", "Lat", "Longitude", "Latitude", "Plot_Lon", "Plot_Lat", "Plot_Longitude", "Plot_Latitude"
-        "X", "Y",  "LON", "LAT", "LONGITUDE", "LATITUDE", "PLOT_LON", "PLOT_LAT", "PLOT_LONGITUDE", "PLOT_LATITUDE"
+        "latlon", "gps_latlon", "plot_latlon", "plot_gps_latlon",
 
-        "e", "n", "east", "north", "easting", "northing", "plot_east", "plot_north", "plot_easting", "plot_northing"
-        "E", "N", "East", "North", "Easting", "Northing", "Plot_East", "Plot_North", "Plot_Easting", "Plot_Northing"
-        "E", "N", "EAST", "NORTH", "EASTING", "NORTHING", "PLOT_EAST", "PLOT_NORTH", "PLOT_EASTING", "PLOT_NORTHING"
+        "x", "y", "lon", "lat", "longitude", "latitude",
+        "plot_lon", "plot_lat", "plot_longitude", "plot_latitude",
 
-        "polygon", "gps_polygon", "gps polygon", "plot_polygon", "plot polygon", "plot_gps_polygon", "plot gps polygon", 
-        "Polygon", "gps_polygon", "gps polygon", "Plot_Polygon", "Plot Polygon", "Plot_Gps_Polygon", "Plot Gps Polygon", 
-        "POLYGON", "GPS_POLYGON", "GPS POLYGON", "PLOT_POLYGON", "PLOT_POLYGON", "PLOT_GPS_POLYGON", "PLOT GPS POLYGON",
+        "e", "n", "east", "north", "easting", "northing",
+        "plot_east", "plot_north", "plot_easting", "plot_northing",
 
-        "geometry", "point_geometry", "point geometry", "polygon_geometry", "polygon geometry", "plot_geometry", "plot geometry",
-        "Geometry", "Point_Geometry", "Point Geometry", "Polygon_Geometry", "Polygon Geometry", "Plot_Geometry", "Plot Geometry",
-        "GEOMETRY", "POINT_GEOMETRY", "POINT GEOMETRY", "POLYGON_GEOMETRY", "POLYGON GEOMETRY", "PLOT_GEOMETRY", "PLOT GEOMETRY",
+        "polygon", "gps_polygon", "plot_polygon", "plot_gps_polygon",
 
-        "location", "point_location", "point location", "polygon_location", "polygon location", "plot_location", "plot location",
-        "Location", "Point_Location", "Point Location", "Polygon_Location", "Polygon Location", "Plot_Location", "Plot Location",
-        "LOCATION", "POINT_LOCATION", "POINT LOCATION", "POLYGON_LOCATION", "POLYGON LOCATION", "PLOT_LOCATION", "PLOT LOCATION",
-        
-        "boundary", "point_boundary", "point boundary", "polygon_boundary", "polygon boundary", "plot_boundary", "plot boundary",
-        "Boundary", "Point_boundary", "Point boundary", "Polygon_Boundary", "Polygon Boundary", "Plot_Boundary", "Plot Boundary",
-        "BOUNDARY", "POINT_BOUNDARY", "POINT BOUNDARY", "POLYGON_BOUNDARY", "POLYGON BOUNDARY", "PLOT_BOUNDARY", "PLOT BOUNDARY", 
+        "geometry", "point_geometry", "polygon_geometry", "plot_geometry",
 
-        "coordinates", "point_coordinates", "point coordinates", "polygon_coordinates", "polygon coordinates", "plot_coordinates", "plot coordinates",
-        "Coordinates", "Point_Coordinates", "Point Coordinates", "Polygon_Coordinates", "Polygon Coordinates", "Plot_coordinates", "Plot coordinates",
-        "COORDINATES", "POINT_COORDINATEs", "POINT COORDINATEs", "POLYGON_COORDINATEs", "POLYGON COORDINATEs", "PLOT_COORDINATEs", "PLOT COORDINATEs"   
+        "location", "point_location", "polygon_location", "plot_location",
+
+        "boundary", "point_boundary", "polygon_boundary", "plot_boundary",
+
+        "coordinates", "point_coordinates", "polygon_coordinates", "plot_coordinates"
     ]
+
+    def find_geom_columns(df):
+        normalized_candidates = [normalize(c) for c in GEOMETRY_CANDIDATES]
+
+        geom_columns = [
+            col for col in df.columns
+            if any(candidate in normalize(col) for candidate in normalized_candidates)
+        ]
+
+        return geom_columns
 
 #======================================================================================================================================
 # DATA CLEANING AND GEOMETRY PROCESSING FUNCTIONS
@@ -313,8 +355,6 @@ with Col1:
             return value
 
         try:
-            geom = None
-
 
             def strip_zvalues(coords):
                 if isinstance(coords[0], (int, float)):
@@ -330,60 +370,62 @@ with Col1:
                         coords.append(coords[0])
                 return coords
 
-            def swap_coords_lon_lat(a, b):
-                if abs(a) <= 90 and abs(b) > 90:
-                    return b, a
-                return a, b
+            def swap_coords_lon_lat(lon, lat, bounds):
+                min_lat, max_lat, min_lon, max_lon = bounds
 
-            def fix_geometry(geom):
+                lon_in_lat_range = min_lat <= lon <= max_lat
+                lon_in_lon_range = min_lon <= lon <= max_lon
+
+                lat_in_lat_range = min_lat <= lat <= max_lat
+                lat_in_lon_range = min_lon <= lat <= max_lon
+
+                if lon_in_lon_range and lat_in_lat_range:
+                    return (lon, lat)
+
+                if lon_in_lat_range and lat_in_lon_range:
+                    return (lat, lon)
+
+                return (lon, lat)
+
+            def fix_geometry(geom, bounds):
+
+                if isinstance(geom, Point):
+                    lon, lat = geom.x, geom.y
+                    lon, lat = swap_coords_lon_lat(lon, lat, bounds)
+                    return Point(lon, lat)
+
                 if isinstance(geom, Polygon):
-                    exterior = [swap_coords_lon_lat(x, y) for x, y in geom.exterior.coords]
-                    interiors = [[swap_coords_lon_lat(x, y) for x, y in ring.coords] for ring in geom.interiors]
-                    return Polygon(exterior, interiors)
+                    exterior = [swap_coords_lon_lat(lon, lat, bounds) for lon, lat in geom.exterior.coords]
+                    interiors = [
+                        [swap_coords_lon_lat(lon, lat, bounds) for lon, lat in ring.coords]
+                        for ring in geom.interiors
+                    ]
+                    return Polygon(close_ring(exterior), [close_ring(r) for r in interiors])
 
                 if isinstance(geom, MultiPolygon):
-                    return MultiPolygon([fix_geometry(p) for p in geom])
-                
-                if isinstance(geom, Point):
-                    return Point([fix_geometry(p) for p in geom])
+                    return MultiPolygon([fix_geometry(p, bounds) for p in geom])
 
                 return geom
 
             def extract_xy_from_xyz(text):
-
                 triplet_pattern = re.compile(
                     r'(-?\d+\.?\d*)\s*,\s*'
                     r'(-?\d+\.?\d*)\s*,\s*'
                     r'(-?\d+\.?\d*)'
                 )
-
                 matches = triplet_pattern.findall(text)
 
-                coords = []
-                for x, y, z in matches:
-                    x = float(x)
-                    y = float(y)
-                    lon, lat = swap_coords_lon_lat(x, y)
-                    coords.append((lon, lat))
-
+                coords = [(float(x), float(y)) for x, y, z in matches]
                 return coords
 
             def extract_xy_pairs(text):
-
                 pair_pattern = re.compile(
                     r'(-?\d+\.?\d*)\s*[,\s]\s*'
                     r'(-?\d+\.?\d*)'
                 )
-
                 pairs = pair_pattern.findall(text)
 
-                coords = []
-                for a, b in pairs:
-                    a = float(a)
-                    b = float(b)
-                    lon, lat = swap_coords_lon_lat(a, b)
-                    coords.append((lon, lat))
-
+                coords = [(float(a), float(b)) for a, b in pairs]
                 return coords
 
             if '"coordinates"' in text and '"type"' in text:
@@ -397,41 +439,26 @@ with Col1:
 
             else:
                 text = re.sub(r'[,\s]+$', '', text)
+
                 xyz_coords = extract_xy_from_xyz(text)
                 total_numbers = len(re.findall(r'-?\d+\.?\d*', text))
 
                 if len(xyz_coords) >= 3 and len(xyz_coords) * 3 >= 0.6 * total_numbers:
                     coords = close_ring(xyz_coords)
                     geom = Polygon(coords)
-
                 else:
                     coords = extract_xy_pairs(text)
 
                     if len(coords) == 1:
                         geom = Point(coords[0])
                     elif len(coords) >= 3:
-                        coords = close_ring(coords)
-                        geom = Polygon(coords)
+                        geom = Polygon(close_ring(coords))
                     else:
                         return value
 
+            geom = fix_geometry(geom, bounding_box)
+
             geom = transform(lambda x, y, z=None: (x, y), geom)
-
-
-            if isinstance(geom, Polygon):
-                geom = Polygon(
-                    close_ring(geom.exterior.coords),
-                    [close_ring(r.coords) for r in geom.interiors]
-                )
-
-            elif isinstance(geom, MultiPolygon):
-                geom = MultiPolygon([
-                    Polygon(
-                        close_ring(p.exterior.coords),
-                        [close_ring(r.coords) for r in p.interiors]
-                    )
-                    for p in geom.geoms
-                ])
 
             if not geom.is_valid:
                 geom = make_valid(geom)
@@ -466,7 +493,7 @@ with Col1:
         return value
 
     def process_coords(coords):
-        return [(float(format_coord(x)), float(format_coord(y))) for x, y in coords]
+        return [(float(format_coord(lon)), float(format_coord(lat))) for lon, lat in coords]
 
     def process_polygon(polygon):
         exterior = process_coords(polygon.exterior.coords)
@@ -474,9 +501,9 @@ with Col1:
         return Polygon(exterior, interiors)
 
     def process_point(point):
-        x = float(format_coord(point.x))
-        y = float(format_coord(point.y))
-        return Point(x, y)
+        lon = float(format_coord(point.x))
+        lat = float(format_coord(point.y))
+        return Point(lon, lat)
 
     def process_wkt(wkt_string):
         try:
@@ -516,7 +543,6 @@ with Col1:
 
     def convert_to_geodf(Data):
 
-
         existing_columns = [col for col in Data.columns if col.lower() in [c.lower() for c in GEOMETRY_CANDIDATES]]
         if not existing_columns:
             return Data.fillna("")
@@ -531,7 +557,7 @@ with Col1:
 
         polygon_cols = [c for c in existing_columns if "polygon" in c.lower()]
         point_cols   = [c for c in existing_columns if "point" in c.lower()]
-        generic_cols = [c for c in existing_columns if c.lower() in ["geometry", "wkt"]]
+        geometry_cols = [c for c in existing_columns if c.lower() in ["geometry", "wkt"]]
 
 
 #======================================================================================================================================
@@ -540,38 +566,37 @@ with Col1:
 
         def choose_geometry(row):
             
-            
-            polygon_wkt = ""
+            polygon = ""
             for col in polygon_cols:
                 val = row.get(col)
                 if pd.notnull(val) and str(val).strip():
                     try:
                         geom = wkt.loads(val)
                         if geom.geom_type in ["Polygon", "MultiPolygon"]:
-                            polygon_wkt = geom.wkt
+                            polygon = geom.wkt
                             break
                     except:
                         pass
 
-            point_wkt = ""
+            point = ""
             for col in point_cols:
                 val = row.get(col)
                 if pd.notnull(val) and str(val).strip():
                     try:
                         geom = wkt.loads(val)
                         if geom.geom_type == "Point":
-                            point_wkt = geom.wkt
+                            point = geom.wkt
                             break
                     except:
                         pass
 
-            generic_wkt = ""
-            for col in generic_cols:
+            geometry = ""
+            for col in geometry_cols:
                 val = row.get(col)
                 if pd.notnull(val) and str(val).strip():
                     try:
                         geom = wkt.loads(val)
-                        generic_wkt = geom.wkt
+                        geometry = geom.wkt
                         break
                     except:
                         pass
@@ -600,11 +625,11 @@ with Col1:
                 coord_wkt = f"POINT ({lon} {lat})"
                 coord_wkt = apply_n_times(process_wkt, coord_wkt, 2)
 
-            final_wkt = polygon_wkt if polygon_wkt else point_wkt if point_wkt else generic_wkt if generic_wkt else coord_wkt
+            final_wkt = polygon if polygon else point if point else geometry if geometry else coord_wkt
 
             return pd.Series({
-                "plot_gps_polygon": polygon_wkt,
-                "plot_gps_point": point_wkt if point_wkt else coord_wkt,
+                "plot_gps_polygon": polygon,
+                "plot_gps_point": point if point else coord_wkt,
                 "plot_wkt": final_wkt
             })
 
