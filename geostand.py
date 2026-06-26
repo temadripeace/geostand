@@ -3,6 +3,7 @@ import re
 import json
 import zipfile
 import chardet
+import tempfile
 import unicodedata
 import pandas as pd
 import streamlit as st
@@ -298,37 +299,70 @@ with Col1:
         return col
 
     GEOMETRY_CANDIDATES = [
-        "gps", "point",  "punto", "puntos", "gps_point", "plot_gps_point",
-
-        "wkt", "point_wkt", "polygon_wkt", "plot_wkt",
-
-        "poly", "polygon", "poligono", "poligonos"
-        "gps_poly", "plot_poly", "plot_gps_poly",
-        "polygon_points", "polygon_point",
-
-        "geom", "point_geom", "polygon_geom", "plot_geom",
-
-        "shape", "point_shape", "polygon_shape", "plot_shape",
-
-        "coord", "point_coord", "polygon_coord", "plot_coord",
-
-        "latlon", "gps_latlon", "plot_latlon", "plot_gps_latlon",
-
-        "x", "y", "lon", "lat", "longitude", "latitude",
-        "plot_lon", "plot_lat", "plot_longitude", "plot_latitude",
-
-        "e", "n", "east", "north", "easting", "northing",
-        "plot_east", "plot_north", "plot_easting", "plot_northing",
-
-        "polygon", "gps_polygon", "plot_polygon", "plot_gps_polygon",
-
-        "geometry", "point_geometry", "polygon_geometry", "plot_geometry",
-
-        "location", "point_location", "polygon_location", "plot_location",
-
-        "boundary", "point_boundary", "polygon_boundary", "plot_boundary",
-
         "coordinates", "point_coordinates", "polygon_coordinates", "plot_coordinates"
+        "gps", "point", "gps_point", "gps point", "plot_gps_point", "plot gps point", 
+        "Gps", "Point", "Gps_Point", "GPS POINT", "Plot_Gps_Point", "Plot Gps Point", 
+        "GPS", "POINT", "GPS_POINT", "Gps Point", "PLOT_GPS_POINT", "PLOT GPS POINT", 
+        "punto", "PUNTO", "punto GPS", "Punto_GPS", "PUNTO GPS",
+        "puntos","PUNTOS", "puntos GPS", "Puntos_GPS", "PUNTOs GPS",
+
+        "wkt", "point_wkt","point wkt", "polygon_wkt","polygon wkt", "plot_wkt", "plot wkt", 
+        "Wkt", "Point_Wkt","Point Wkt", "Polygon_Wkt","Polygon Wkt", "Plot_Wkt", "Plot Wkt", 
+        "WKT", "POINT_WKT","POINT WKT", "POLYGON_WKT","POLYGON WKT", "PLOT_WKT", "PLOT WKT", 
+
+
+        "poligono","POLIGONO","punto del polígono", "Punto Del Polígono", "PUNTO DEL POLIGONO",
+        "poligonos", "POLIGONOS","puntos del polígono", "Puntos Del Polígono", "PUNTOS DEL POLIGONO"
+        "poly", "gps_poly", "gps poly", "plot_poly", "plot poly", "plot_gps_poly", "plot gps poly",
+        "Poly", "Gps_Poly", "Gps Poly", "Plot_Poly", "Plot Poly", "Plot_Gps_Poly", "Plot Gps Poly",
+        "POLY", "GPS_POLY", "GPS POLY", "PLOT_POLY", "PLOT POLY", "PLOT_GPS_POLY", "PLOT GPS POLY",
+        "polygon_points", "polygon points", "Polygon_Points", "Polygon Points", "POLYGON_POINTS", "POLYGON POINTS", 
+        "polygon_point", "polygon point", "Polygon_Point", "Polygon Point", "POLYGON_POINT", "POLYGON POINT", 
+
+        
+        "geom", "point_geom","point geom", "polygon_geom","polygon geom", "plot_geom", "plot geom", 
+        "Geom", "Point_Geom","Point Geom", "Polygon_Geom","Polygon geom", "plot_Geom", "plot Geom", 
+        "GEOM", "POINT_GEOM","POINT GEOM", "POLYGON_GEOM","POLYGON GEOM", "PLOT_GEOM", "PLOT GEOM", 
+
+        "shape", "point_shape", "point shape", "polygon_shape", "polygon_shape", "plot_shape", "plot shape", 
+        "Shape", "Point_Shape", "Point Shape", "Polygon_Shape", "Polygon_Shape", "Plot_Shape", "Plot Shape", 
+        "SHAPE", "POINT_SHAPE", "POINT SHAPE", "POLYGON_SHAPE", "POLYGON SHAPE", "PLOT_SHAPE", "PLOT SHAPE", 
+
+        "coord", "point_coord", "point coord", "polygon_coord", "polygon coord", "plot_coord", "plot coord",
+        "Coord", "Point_Coord", "Point Coord", "Polygon_Coord", "Polygon Coord", "Plot_Coord", "Plot Coord",
+        "COORD", "POINT_COORD", "POINT COORD", "POLYGON_COORD", "POLYGON COORD", "PLOT_COORD", "PLOT COORD",
+
+        "latlon", "gps_latlon", "gps latlon", "plot_latlon", "plot latlon", "plot_gps_latlon", "plot gps latlon",
+        "LatLon", "Gps_LatLon", "Gps LatLon", "Plot_LatLon", "Plot LatLon", "Plot_Gps_LatLon", "Plot Gps LatLon",
+        "LATLON", "GPS_LATLON", "GPS LATLON", "PLOT_LATLON", "PLOT LATLON", "PLOT_GPS_LATLON", "PLOT GPS LATLON",
+
+        "x", "y",  "lon", "lat", "longitude", "latitude", "plot_lon", "plot_lat", "plot_longitude", "plot_latitude"
+        "X", "Y",  "Lon", "Lat", "Longitude", "Latitude", "Plot_Lon", "Plot_Lat", "Plot_Longitude", "Plot_Latitude"
+        "X", "Y",  "LON", "LAT", "LONGITUDE", "LATITUDE", "PLOT_LON", "PLOT_LAT", "PLOT_LONGITUDE", "PLOT_LATITUDE"
+
+        "e", "n", "east", "north", "easting", "northing", "plot_east", "plot_north", "plot_easting", "plot_northing"
+        "E", "N", "East", "North", "Easting", "Northing", "Plot_East", "Plot_North", "Plot_Easting", "Plot_Northing"
+        "E", "N", "EAST", "NORTH", "EASTING", "NORTHING", "PLOT_EAST", "PLOT_NORTH", "PLOT_EASTING", "PLOT_NORTHING"
+
+        "polygon", "gps_polygon", "gps polygon", "plot_polygon", "plot polygon", "plot_gps_polygon", "plot gps polygon", 
+        "Polygon", "gps_polygon", "gps polygon", "Plot_Polygon", "Plot Polygon", "Plot_Gps_Polygon", "Plot Gps Polygon", 
+        "POLYGON", "GPS_POLYGON", "GPS POLYGON", "PLOT_POLYGON", "PLOT_POLYGON", "PLOT_GPS_POLYGON", "PLOT GPS POLYGON",
+
+        "geometry", "point_geometry", "point geometry", "polygon_geometry", "polygon geometry", "plot_geometry", "plot geometry",
+        "Geometry", "Point_Geometry", "Point Geometry", "Polygon_Geometry", "Polygon Geometry", "Plot_Geometry", "Plot Geometry",
+        "GEOMETRY", "POINT_GEOMETRY", "POINT GEOMETRY", "POLYGON_GEOMETRY", "POLYGON GEOMETRY", "PLOT_GEOMETRY", "PLOT GEOMETRY",
+
+        "location", "point_location", "point location", "polygon_location", "polygon location", "plot_location", "plot location",
+        "Location", "Point_Location", "Point Location", "Polygon_Location", "Polygon Location", "Plot_Location", "Plot Location",
+        "LOCATION", "POINT_LOCATION", "POINT LOCATION", "POLYGON_LOCATION", "POLYGON LOCATION", "PLOT_LOCATION", "PLOT LOCATION",
+        
+        "boundary", "point_boundary", "point boundary", "polygon_boundary", "polygon boundary", "plot_boundary", "plot boundary",
+        "Boundary", "Point_boundary", "Point boundary", "Polygon_Boundary", "Polygon Boundary", "Plot_Boundary", "Plot Boundary",
+        "BOUNDARY", "POINT_BOUNDARY", "POINT BOUNDARY", "POLYGON_BOUNDARY", "POLYGON BOUNDARY", "PLOT_BOUNDARY", "PLOT BOUNDARY", 
+
+        "coordinates", "point_coordinates", "point coordinates", "polygon_coordinates", "polygon coordinates", "plot_coordinates", "plot coordinates",
+        "Coordinates", "Point_Coordinates", "Point Coordinates", "Polygon_Coordinates", "Polygon Coordinates", "Plot_coordinates", "Plot coordinates",
+        "COORDINATES", "POINT_COORDINATEs", "POINT COORDINATEs", "POLYGON_COORDINATEs", "POLYGON COORDINATEs", "PLOT_COORDINATEs", "PLOT COORDINATEs" 
     ]
 
     def find_geom_columns(df):
@@ -854,6 +888,107 @@ with Col1:
 
         st.success(f"File(s) successfully loaded ({final_data.shape[0]} rows, {final_data.shape[1]} columns)")
         st.dataframe(final_data, height=730, use_container_width=True)
+#======================================================================================================================================
+# DATA DOWNLOAD OPTIONS
+#======================================================================================================================================
+        download_format = st.selectbox(
+            "Select download format",
+            ["CSV", "Excel", "GeoJSON", "KML"],
+            key="download_format"
+        )
+
+        if download_format == "CSV":
+
+            csv_data = final_data.to_csv(index=False).encode("utf-8")
+
+            st.download_button(
+                "Download CSV",
+                data=csv_data,
+                file_name=f"{base_name}.csv",
+                mime="text/csv",
+                key="download_csv",
+                use_container_width=True
+            )
+
+        elif download_format == "Excel":
+
+            buffer = io.BytesIO()
+
+            with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+                final_data.to_excel(writer, index=False)
+
+            st.download_button(
+                "Download Excel",
+                data=buffer.getvalue(),
+                file_name=f"{base_name}.xlsx",
+                mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                key="download_excel",
+                use_container_width=True
+            )
+
+        elif download_format == "GeoJSON":
+
+            if "plot_wkt" not in final_data.columns:
+                st.error("Column 'plot_wkt' is required for GeoJSON export.")
+            else:
+                try:
+                    gdf = gpd.GeoDataFrame(
+                        final_data.copy(),
+                        geometry=final_data["plot_wkt"].apply(
+                            lambda x: wkt.loads(x) if pd.notna(x) and str(x).strip() else None
+                        ),
+                        crs="EPSG:4326"
+                    )
+
+                    gdf = gdf[gdf.geometry.notnull()]
+
+                    geojson_data = gdf.to_json().encode("utf-8")
+
+                    st.download_button(
+                        "Download GeoJSON",
+                        data=geojson_data,
+                        file_name=f"{base_name}.geojson",
+                        mime="application/geo+json",
+                        key="download_geojson",
+                        use_container_width=True
+                    )
+
+                except Exception as e:
+                    st.error(f"GeoJSON export failed: {e}")
+
+        elif download_format == "KML":
+
+            if "plot_wkt" not in final_data.columns:
+                st.error("Column 'plot_wkt' is required for KML export.")
+            else:
+                try:
+                    gdf = gpd.GeoDataFrame(
+                        final_data.copy(),
+                        geometry=final_data["plot_wkt"].apply(
+                            lambda x: wkt.loads(x) if pd.notna(x) and str(x).strip() else None
+                        ),
+                        crs="EPSG:4326"
+                    )
+
+                    gdf = gdf[gdf.geometry.notnull()]
+
+                    with tempfile.NamedTemporaryFile(suffix=".kml") as tmp:
+                        gdf.to_file(tmp.name, driver="KML")
+
+                        with open(tmp.name, "rb") as f:
+                            kml_data = f.read()
+
+                    st.download_button(
+                        "Download KML",
+                        data=kml_data,
+                        file_name=f"{base_name}.kml",
+                        mime="application/vnd.google-earth.kml+xml",
+                        key="download_kml",
+                        use_container_width=True
+                    )
+
+                except Exception as e:
+                    st.error(f"KML export failed: {e}")
 
 #======================================================================================================================================
 # STANDARDIZATION AND CERTIFICATION MAPPING
