@@ -2,8 +2,8 @@ import io
 import re
 import json
 import zipfile
-import tempfile
 import chardet
+import tempfile
 import unicodedata
 import pandas as pd
 import streamlit as st
@@ -855,8 +855,6 @@ with Col1:
 
         st.success(f"File(s) successfully loaded ({final_data.shape[0]} rows, {final_data.shape[1]} columns)")
         st.dataframe(final_data, height=730, use_container_width=True)
-
-
 #======================================================================================================================================
 # DATA DOWNLOAD OPTIONS
 #======================================================================================================================================
@@ -1121,14 +1119,11 @@ with Col2:
             standardized_df = standardized_df.reindex(columns=desired_order)
 
 
-# ============================================================================================================================================
-# STANDARDIZATION MAPPING
-# ============================================================================================================================================
-
-            error_dfs = []
+#======================================================================================================================================
+# FLAGGING DOUPLICATE PLOT IDs/CREATING SUCAFINA_PLOT_ID IF SUPPLIER PLOT ID ARE VALID AND EXIST IN THE DATASET
+#======================================================================================================================================
 
             for field_key, row in edited_mapping.iterrows():
-
                 source = row["SELECT SOURCE COLUMN"]
                 manual = str(row["MANUAL VALUE"]).strip()
 
@@ -1141,55 +1136,47 @@ with Col2:
                 else:
                     standardized_df[field_key] = ""
 
-            standardized_df["row_id"] = standardized_df.index
+            if "supplier_plot_id" in standardized_df.columns:
 
- # ============================================================================================================================================
-# DUPLICATE VALIDATION
- # ============================================================================================================================================
+                duplicate_mask = standardized_df["supplier_plot_id"].duplicated(keep=False)
+                duplicate_rows = standardized_df[duplicate_mask]
 
-        standardized_df["sucafina_plot_id"] = standardized_df.apply(
-            lambda r: f"{r['supplier_code']}_{r['supplier_plot_id']}"
-            if r["supplier_code"] and r["supplier_plot_id"]
-            else "",
-            axis=1
-        )
+                if not duplicate_rows.empty:
+                    duplicate_ids = duplicate_rows["supplier_plot_id"].unique()
 
-        standardized_df["is_geodata_validated"] = is_geodata_validated
+                    st.error("Duplicate or missing (supplier_plot_id) values detected: Please ensure that each plot ID is unique and not empty")
+                    st.dataframe(duplicate_rows)
+                    st.stop()
 
-        if "supplier_plot_id" in standardized_df.columns:
+            if "plot_wkt" in standardized_df.columns:
 
-            duplicate_mask = (
-                standardized_df["supplier_plot_id"].duplicated(keep=False) |
-                standardized_df["supplier_plot_id"].astype(str).str.strip().eq("")
+                duplicate_geom_mask = standardized_df["plot_wkt"].duplicated(keep=False)
+                duplicate_geom_rows = standardized_df[duplicate_geom_mask]
+
+                if not duplicate_geom_rows.empty:
+                    duplicate_geom = duplicate_geom_rows["plot_wkt"].unique()
+
+                    st.error("Duplicate plot GEOMETRY values detected: Please ensure that each plot GEOMETRY value is unique and not empty")
+                    st.dataframe(duplicate_geom_rows)
+                    st.stop()
+
+
+            standardized_df["sucafina_plot_id"] = standardized_df.apply(
+                lambda r: f"{r['supplier_code']}_{r['supplier_plot_id']}"
+                if r["supplier_code"] and r["supplier_plot_id"]
+                else "",
+                axis=1
             )
 
-            duplicate_rows = standardized_df[duplicate_mask].copy()
+            standardized_df["is_geodata_validated"] = is_geodata_validated
 
-            if not duplicate_rows.empty:
-                duplicate_rows["error_reason"] = "Duplicate or missing supplier_plot_id"
-                error_dfs.append(duplicate_rows)
-
-        if "plot_wkt" in standardized_df.columns:
-
-            duplicate_geom_mask = (
-                standardized_df["plot_wkt"].duplicated(keep=False) |
-                standardized_df["plot_wkt"].astype(str).str.strip().eq("")
-            )
-
-            duplicate_geom_rows = standardized_df[duplicate_geom_mask].copy()
-
-            if not duplicate_geom_rows.empty:
-                duplicate_geom_rows["error_reason"] = "Duplicate or missing plot geometry"
-                error_dfs.append(duplicate_geom_rows)
-
-# ============================================================================================================================================
-# AREA VALIDATION
-# ============================================================================================================================================
+#======================================================================================================================================
+# AREA COMPUTATAION LOGIC FOR PLOYGONS /FLAGS FOR POINTS MISSING AREA OR WITH AREA GREATER THAN 4 HA
+#======================================================================================================================================
 
             geod = Geod(ellps="WGS84")
 
             def compute_area_ha(wkt_str):
-
                 if not wkt_str or str(wkt_str).strip() == "":
                     return None
 
@@ -1201,83 +1188,39 @@ with Col2:
                         return round(abs(area) / 10000, 3)
 
                     elif isinstance(geom, MultiPolygon):
-                        area = sum(
-                            abs(geod.geometry_area_perimeter(poly)[0])
-                            for poly in geom.geoms
-                        )
+                        area = sum(abs(geod.geometry_area_perimeter(poly)[0]) for poly in geom.geoms)
                         return round(area / 10000, 3)
 
                     elif isinstance(geom, Point):
                         return None
-                    
 
                 except Exception:
                     return None
 
             computed_area = standardized_df["plot_wkt"].apply(compute_area_ha)
-
-            standardized_df["plot_area_ha"] = computed_area.fillna(
-                standardized_df["plot_area_ha"]
-            )
+            standardized_df["plot_area_ha"] = computed_area.fillna(standardized_df["plot_area_ha"])
 
             point_missing_area = (
                 standardized_df["plot_wkt"].str.startswith("POINT", na=False) &
-                (
-                    standardized_df["plot_area_ha"].isna() |
-                    standardized_df["plot_area_ha"].astype(str).str.strip().eq("")
-                )
+                (standardized_df["plot_area_ha"].astype(str).str.strip() == "")
             )
 
-            missing_area_rows = standardized_df[point_missing_area].copy()
-
-            if not missing_area_rows.empty:
-                missing_area_rows["error_reason"] = (
-                    "POINT geometry missing reported area"
-                )
-                error_dfs.append(missing_area_rows)
+            if point_missing_area.any():
+                st.error("Missing Area for Plot(s): Please provide the Reported Area (Ha) for all plots mapped as POINT geometries")
+                st.write(standardized_df[point_missing_area])
+                st.stop()
 
             point_large_area = (
                 standardized_df["plot_wkt"].str.startswith("POINT", na=False) &
-                (
-                    pd.to_numeric(
-                        standardized_df["plot_area_ha"],
-                        errors="coerce"
-                    ) > 4
-                )
+                (pd.to_numeric(standardized_df["plot_area_ha"], errors="coerce") > 4)
             )
 
-            large_area_rows = standardized_df[point_large_area].copy()
+            if point_large_area.any():
+                st.error("POINT Geometry Plot(s) with an area greater than 4 Ha detected: Please verify the reported area or remap these plots as POLYGON geometries.")
+                st.write(standardized_df[point_large_area])
+                st.stop()
 
-            if not large_area_rows.empty:
-                large_area_rows["error_reason"] = (
-                    "POINT geometry with area greater than 4 ha"
-                )
-                error_dfs.append(large_area_rows)
-
-            if error_dfs:
-
-                error_df = pd.concat(error_dfs, ignore_index=True)
-
-                error_df = error_df.drop_duplicates()
-
-                csv_errors = error_df.to_csv(index=False).encode("utf-8")
-
-                st.error(
-                    f"{len(error_df)} Invalid plot(s) Detected. The identified plot(s) were excluded from the Standardized file."
-                )
-
-                st.dataframe(error_df)
-
-                standardized_df = standardized_df.drop(index=error_df.index)
-                
-                st.download_button(
-                    label="Download Invalid Plots CSV",
-                    data=csv_errors,
-                    file_name="Invalid_Plots.csv",
-                    mime="text/csv"
-                )
-
-#========================================================================================================================================
+#======================================================================================================================================
 # CERTIFICATION MAPPING LOGIC
 #======================================================================================================================================
             def to_bool(value):
@@ -1316,27 +1259,19 @@ with Col2:
                     )
                     st.stop()
 
+            st.success("Data standardized successfully.")
+            st.session_state["standardized_data"] = standardized_df
     
 
 #======================================================================================================================================
 # DATA DOWNLOAD OPTIONS
 #======================================================================================================================================
+
 st.markdown(
     """
     <hr style="height:2px;border:none;color:var(--brand-color);background-color:var(--brand-color);">
     """,
     unsafe_allow_html=True
-)
-st.markdown(
-            """
-            <div class="content-headings">
-            Standardized Geodata
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-st.success(
-    f"{len(standardized_df)} Valid plot(s) standardizedsuccessfully."
 )
 
 if "standardized_df" in locals():
@@ -1346,9 +1281,7 @@ download_format = st.selectbox("Select download format", ["CSV", "Excel", "GeoJS
 
 col1, col2 = st.columns([1, 1])
 
-
 with col2:
-    
     button_style = """
         <style>
         div.stDownloadButton > button:first-child {
