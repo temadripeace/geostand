@@ -11,7 +11,6 @@ import geopandas as gpd
 from shapely import wkt
 from pyproj import Geod
 import xml.etree.ElementTree as ET
-from shapely.validation import make_valid
 from shapely.ops import transform
 from shapely.geometry import shape, Point, Polygon, MultiPolygon, MultiPoint, LineString
 #======================================================================================================================================
@@ -461,9 +460,6 @@ with Col1:
 
             geom = transform(lambda x, y, z=None: (x, y), geom)
 
-            if not geom.is_valid:
-                geom = make_valid(geom)
-
             return geom.wkt
 
         except Exception:
@@ -509,9 +505,6 @@ with Col1:
     def process_wkt(wkt_string):
         try:
             geom = wkt.loads(wkt_string)
-
-            if not geom.is_valid:
-                geom = make_valid(geom)
                 
             if isinstance(geom, Polygon):
                 return process_polygon(geom).wkt
