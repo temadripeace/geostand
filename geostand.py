@@ -214,7 +214,7 @@ st.markdown("""
 </style>
 
 <div class="fixed-header">
-    <img src="https://group.sucafina.com/themes/sucafina/assets/img/base/logo.svg">
+    <img src="https://maprinitiative.org/wp-content/uploads/2026/08/Sucafina-Logo-300x162.jpg">
     <h1>Geospatial Data Cleaning & Standardization Tool</h1>
 </div>
 
