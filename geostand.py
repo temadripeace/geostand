@@ -936,7 +936,7 @@ with Col1:
                     gdf = gdf.reset_index(drop=True)
 
                     with tempfile.NamedTemporaryFile(suffix=".kml") as tmp:
-                        gdf.to_file(tmp.name, driver="KML")
+                        gdf.to_file(tmp.name, driver="KML", index=False)
 
                         with open(tmp.name, "rb") as f:
                             kml_data = f.read()
