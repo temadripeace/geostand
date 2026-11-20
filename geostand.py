@@ -932,6 +932,8 @@ with Col1:
                     )
 
                     gdf = gdf[gdf.geometry.notnull()]
+                    
+                    gdf = gdf.reset_index(drop=True)
 
                     with tempfile.NamedTemporaryFile(suffix=".kml") as tmp:
                         gdf.to_file(tmp.name, driver="KML")
