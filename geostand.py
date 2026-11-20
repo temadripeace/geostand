@@ -847,7 +847,8 @@ with Col1:
             base_name = original_name.split(".")[0]
 
         st.success(f"File(s) successfully loaded ({final_data.shape[0]} rows, {final_data.shape[1]} columns)")
-        st.dataframe(final_data, height=730, use_container_width=True)
+        st.dataframe(final_data, height=730, use_container_width=True, hide_index=True)
+
 #======================================================================================================================================
 # DATA DOWNLOAD OPTIONS
 #======================================================================================================================================
@@ -902,7 +903,7 @@ with Col1:
 
                     gdf = gdf[gdf.geometry.notnull()]
 
-                    geojson_data = gdf.to_json().encode("utf-8")
+                    geojson_data = gdf.to_json(drop_id=True).encode("utf-8")
 
                     st.download_button(
                         "Download GeoJSON",
@@ -1138,7 +1139,7 @@ with Col2:
                     duplicate_ids = duplicate_rows["supplier_plot_id"].unique()
 
                     st.error("Duplicate or missing (supplier_plot_id) values detected: Please ensure that each plot ID is unique and not empty")
-                    st.dataframe(duplicate_rows)
+                    st.dataframe(duplicate_rows, hide_index=True)
                     st.stop()
 
             if "plot_wkt" in standardized_df.columns:
@@ -1150,7 +1151,7 @@ with Col2:
                     duplicate_geom = duplicate_geom_rows["plot_wkt"].unique()
 
                     st.error("Duplicate plot GEOMETRY values detected: Please ensure that each plot GEOMETRY value is unique and not empty")
-                    st.dataframe(duplicate_geom_rows)
+                    st.dataframe(duplicate_geom_rows, hide_index=True)
                     st.stop()
 
 
@@ -1268,7 +1269,7 @@ st.markdown(
 )
 
 if "standardized_df" in locals():
-    st.dataframe(standardized_df, use_container_width=True)
+    st.dataframe(standardized_df, use_container_width=True, hide_index=True)
 
 download_format = st.selectbox("Select download format", ["CSV", "Excel", "GeoJSON", "KML"])
 
