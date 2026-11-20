@@ -1139,7 +1139,7 @@ with Col2:
                     duplicate_ids = duplicate_rows["supplier_plot_id"].unique()
 
                     st.error("Duplicate or missing (supplier_plot_id) values detected: Please ensure that each plot ID is unique and not empty")
-                    st.dataframe(duplicate_rows, hide_index=True)
+                    st.dataframe(duplicate_rows)
                     st.stop()
 
             if "plot_wkt" in standardized_df.columns:
@@ -1151,7 +1151,7 @@ with Col2:
                     duplicate_geom = duplicate_geom_rows["plot_wkt"].unique()
 
                     st.error("Duplicate plot GEOMETRY values detected: Please ensure that each plot GEOMETRY value is unique and not empty")
-                    st.dataframe(duplicate_geom_rows, hide_index=True)
+                    st.dataframe(duplicate_geom_rows)
                     st.stop()
 
 
@@ -1269,7 +1269,7 @@ st.markdown(
 )
 
 if "standardized_df" in locals():
-    st.dataframe(standardized_df, use_container_width=True, hide_index=True)
+    st.dataframe(standardized_df, use_container_width=True)
 
 download_format = st.selectbox("Select download format", ["CSV", "Excel", "GeoJSON", "KML"])
 
